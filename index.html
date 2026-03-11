@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulation de Rendement avec Retraits Annuels</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f4f5f7;
+      --surface:   #ffffff;
+      --border:    #dde1ea;
+      --accent:    #2563b0;
+      --accent2:   #0ea5e9;
+      --text:      #1a1f2e;
+      --muted:     #7a829a;
+      --positive:  #1f8f5e;
+      --negative:  #c0374a;
+      --row-even:  #f8f9fb;
+      --row-hover: #eef3fb;
+      --thead-bg:  #f0f2f6;
+      --tbody-border: rgba(180,185,200,0.4);
+    }
+
+    html.dark {
+      --bg:        #0b0e13;
+      --surface:   #131720;
+      --border:    #1e2535;
+      --accent:    #4c8fc9;
+      --accent2:   #64b5f6;
+      --text:      #e8eaf0;
+      --muted:     #6b7590;
+      --positive:  #3dba7e;
+      --negative:  #e05c6a;
+      --row-even:  #0f1219;
+      --row-hover: #141c2a;
+      --thead-bg:  #0d1018;
+      --tbody-border: rgba(30,37,53,0.6);
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 14px 7px 10px;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      user-select: none;
+    }
+    .theme-toggle:hover {
+      color: var(--text);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    .toggle-track {
+      width: 34px;
+      height: 20px;
+      background: var(--border);
+      border-radius: 999px;
+      position: relative;
+      transition: background 0.25s;
+      flex-shrink: 0;
+    }
+    html.dark .toggle-track { background: var(--accent); }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.25s cubic-bezier(.4,0,.2,1), background 0.25s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    html.dark .toggle-thumb { transform: translateX(14px); }
+    .toggle-icon { font-size: 15px; line-height: 1; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.25s, color 0.25s;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0 32px 80px;
+    }
+
+    /* Two-column layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 28px;
+      align-items: start;
+      padding-top: 24px;
+    }
+    .col-left {
+      position: sticky;
+      top: calc(var(--header-h) + 12px);
+    }
+    .col-right { min-width: 0; }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      .col-left { position: static; }
+      .wrapper { padding: 0 16px 60px; }
+    }
+
+    /* Header */
+    :root { --header-h: 56px; }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: var(--header-h);
+      margin-bottom: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 0 0 0;
+      animation: fadeDown 0.7s ease both;
+      transition: background 0.25s, border-color 0.25s;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 0 32px;
+    }
+    header .eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.1rem, 2vw, 1.5rem);
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    header h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    header p {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 300;
+      white-space: nowrap;
+    }
+    .header-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 28px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .card:nth-child(2) { animation-delay: 0.1s; }
+    .card:nth-child(3) { animation-delay: 0.2s; }
+
+    .card-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Form grid */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .field .input-wrap {
+      position: relative;
+    }
+    .field .prefix {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+      padding: 12px 14px 12px 30px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+    .field input.no-prefix { padding-left: 14px; }
+    .field input::-webkit-outer-spin-button,
+    .field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,176,0.12);
+    }
+    .field input.error { border-color: var(--negative); }
+
+    /* Button */
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 32px;
+    }
+    button.calc {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 48px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    button.calc::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.08);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    button.calc:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,176,0.25); }
+    button.calc:hover::after { opacity: 1; }
+    button.calc:active { transform: translateY(0); }
+
+    /* Error message */
+    .err-msg {
+      color: var(--negative);
+      font-size: 12px;
+      margin-top: 4px;
+      min-height: 16px;
+    }
+
+    /* Summary cards */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .stat-card.gold::before  { background: var(--accent); }
+    .stat-card.blue::before  { background: var(--accent2); }
+    .stat-card.green::before { background: var(--positive); }
+    .stat-card.red::before   { background: var(--negative); }
+
+    .stat-card .label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-family: 'DM Mono', monospace;
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .stat-card .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+    }
+    thead th {
+      background: var(--thead-bg);
+      padding: 13px 18px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    thead th:first-child { text-align: center; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--tbody-border);
+      transition: background 0.15s;
+    }
+    tbody tr:nth-child(even) { background: var(--row-even); }
+    tbody tr:hover { background: var(--row-hover); }
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody td {
+      padding: 11px 18px;
+      text-align: right;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    tbody td:first-child {
+      text-align: center;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    tbody td.val-fin-positive { color: var(--positive); }
+    tbody td.val-fin-zero     { color: var(--negative); }
+
+    /* Notice */
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #dbeafe;
+      border: 1px solid rgba(37,99,176,0.3);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #1e3a5f;
+      margin-bottom: 24px;
+      animation: fadeUp 0.5s ease both;
+    }
+    html.dark .notice {
+      background: #1a2a40;
+      color: #93c5fd;
+      border-color: rgba(76,143,201,0.3);
+    }
+    .notice-warn {
+      background: #fee2e2;
+      border-color: #c0374a;
+      border-left-color: #c0374a;
+      color: #7f1d1d;
+    }
+    html.dark .notice-warn {
+      background: #3b1111;
+      color: #fca5a5;
+      border-color: #e05c6a;
+      border-left-color: #e05c6a;
+    }
+    .notice-warn .icon { color: #c0374a !important; }
+    html.dark .notice-warn .icon { color: #e05c6a !important; }
+    .notice span.icon { color: var(--accent); font-size: 16px; flex-shrink: 0; }
+
+    /* Chart */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 36px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 340px;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Mode rendement variable */
+    .mode-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .mode-btn.active {
+      border-color: var(--accent);
+      background: rgba(37,99,176,0.08);
+      color: var(--accent);
+    }
+    html.dark .mode-btn.active {
+      background: rgba(37,99,176,0.1);
+    }
+    .mode-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+    .var-options {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+    .var-options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .sim-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .sim-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(37,99,176,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(37,99,176,0.25);
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .sim-badge:hover { background: rgba(37,99,176,0.2); }
+    .sim-badge.active-sim {
+      background: var(--accent);
+      color: #fff;
+    }
+    html.dark .sim-badge.active-sim { color: #0b0e13; }
+
+    /* Taux colorés dans le tableau */
+    td.taux-pos { color: var(--positive); }
+    td.taux-neg { color: var(--negative); }
+
+    /* Onglets tableau */
+    .tabs-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .tabs-header {
+      display: flex;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      background: var(--thead-bg);
+      gap: 0;
+    }
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 10px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      transition: color 0.18s, border-color 0.18s, background 0.18s;
+      white-space: nowrap;
+      position: relative;
+    }
+    .tab-btn:last-child { border-right: none; }
+    .tab-btn:hover { color: var(--text); background: rgba(128,128,128,0.06); }
+    .tab-btn.active { color: var(--surface); border-bottom-color: var(--accent); background: var(--accent); }
+    html.dark .tab-btn.active { color: #0b0e13; }
+    .tab-btn .tab-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 7px;
+      vertical-align: middle;
+      margin-top: -2px;
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Retrait mode toggle */
+    .retrait-mode-toggle {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .retrait-btn {
+      flex: 1;
+      padding: 5px 8px;
+      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .retrait-btn.active {
+      border-color: var(--accent);
+      background: rgba(37,99,176,0.08);
+      color: var(--accent);
+    }
+    .retrait-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+    /* Inflation toggle */
+    .inflation-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .checkbox-label:hover { color: var(--text); }
+    .inflation-field .input-wrap { margin-top: 0; }
+
+    /* Monte Carlo stats */
+    .mc-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .mc-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .mc-stat .mc-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .mc-stat .mc-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .mc-stat.highlight .mc-value { color: var(--accent); font-size: 15px; }
+    .mc-stat.positive .mc-value  { color: var(--positive); }
+    .mc-stat.negative .mc-value  { color: var(--negative); }
+
+    /* Hidden */
+    .hidden { display: none; }
+
+    /* Animations */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      .card { padding: 24px 20px; }
+      .wrapper { padding: 40px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Changer le thème">
+  <span class="toggle-icon" id="toggle-icon">☀️</span>
+  <div class="toggle-track"><div class="toggle-thumb"></div></div>
+  <span id="toggle-label">Clair</span>
+</button>
+
+<header>
+  <div class="eyebrow">Outil financier</div>
+  <div class="header-divider"></div>
+  <h1>Simulation de <em>Rendement</em> avec Retraits Annuels</h1>
+  <div class="header-divider"></div>
+  <p>Projetez l'évolution de votre placement année par année</p>
+</header>
+
+<div class="wrapper">
+
+  <div class="layout">
+
+    <!-- COLONNE GAUCHE : Paramètres -->
+    <div class="col-left">
+
+      <div class="card">
+        <div class="card-title">Paramètres</div>
+
+        <!-- Sélecteur de mode -->
+        <div class="mode-toggle-row">
+          <button class="mode-btn active" id="btn-fixe" onclick="setMode('fixe')">📊 Taux fixe</button>
+          <button class="mode-btn" id="btn-variable" onclick="setMode('variable')">📈 Variable</button>
+          <button class="mode-btn" id="btn-monte" onclick="setMode('monte')">🎲 Monte Carlo</button>
+        </div>
+
+        <div class="form-grid">
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Valeur initiale</label>
+            <div class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="valeur" placeholder="100 000" min="1" />
+            </div>
+            <div class="err-msg" id="err-valeur"></div>
+          </div>
+
+          <div class="field" id="field-taux">
+            <label>Taux de rendement</label>
+            <div class="input-wrap">
+              <span class="prefix">%</span>
+              <input type="number" id="taux" placeholder="5.00" min="0" step="0.01" />
+            </div>
+            <div class="err-msg" id="err-taux"></div>
+          </div>
+
+          <div class="field">
+            <label>Retrait annuel</label>
+            <div class="retrait-mode-toggle">
+              <button class="retrait-btn active" id="btn-retrait-montant" onclick="setRetraitMode('montant')">$ Montant</button>
+              <button class="retrait-btn" id="btn-retrait-pct" onclick="setRetraitMode('pct')">% Taux</button>
+            </div>
+            <div id="retrait-montant-wrap" class="input-wrap">
+              <span class="prefix">$</span>
+              <input type="number" id="retrait" placeholder="20 000" min="0" />
+            </div>
+            <div id="retrait-pct-wrap" class="input-wrap hidden">
+              <span class="prefix">%</span>
+              <input type="number" id="retrait-pct" placeholder="4.0" value="4" min="0" max="100" step="0.1" />
+            </div>
+            <div class="err-msg" id="err-retrait"></div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <div class="inflation-toggle">
+              <label class="checkbox-label">
+                <input type="checkbox" id="inflation-on" onchange="toggleInflation()" />
+                <span>Ajuster à l'inflation</span>
+              </label>
+              <div class="inflation-field" id="inflation-field">
+                <div class="input-wrap" style="width:70px; opacity:0.4;">
+                  <span class="prefix">%</span>
+                  <input type="number" id="inflation" value="2" min="0" max="20" step="0.1" placeholder="2.0" disabled />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Âge de retraite</label>
+            <div class="input-wrap">
+              <input type="number" id="annee" class="no-prefix" placeholder="55" min="1" max="120" />
+            </div>
+            <div class="err-msg" id="err-annee"></div>
+          </div>
+
+          <div class="field">
+            <label>Nb d'années <span style="font-size:10px;color:var(--muted)">(0=épuis.)</span></label>
+            <div class="input-wrap">
+              <input type="number" id="nb" class="no-prefix" placeholder="20" min="0" max="200" />
+            </div>
+            <div class="err-msg" id="err-nb"></div>
+          </div>
+
+        </div>
+
+        <!-- Options du mode variable -->
+        <div class="var-options hidden" id="var-options">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Options de simulation</div>
+          <div class="var-options-grid">
+            <div class="field">
+              <label>Moy. cible</label>
+              <div class="input-wrap">
+                <span class="prefix">%</span>
+                <input type="number" id="var-moy" value="6" min="-20" max="20" step="0.5" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Oscillation</label>
+              <div class="input-wrap">
+                <span class="prefix">±%</span>
+                <input type="number" id="var-amp" value="20" min="1" max="40" step="1" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Simulations</label>
+              <div class="input-wrap">
+                <input type="number" id="var-nsim" class="no-prefix" value="5" min="1" max="10" oninput="if(this.value>10)this.value=10;if(this.value<1&&this.value!='')this.value=1;" />
+              </div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);font-style:italic;">Les courbes apparaîtront dans la légende du graphique.</div>
+        </div>
+
+        <!-- Options du mode Monte Carlo -->
+        <div class="var-options hidden" id="monte-options">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Options Monte Carlo</div>
+          <div class="var-options-grid">
+            <div class="field">
+              <label>Moy. cible</label>
+              <div class="input-wrap">
+                <span class="prefix">%</span>
+                <input type="number" id="mc-moy" value="6" min="-20" max="20" step="0.5" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Oscillation</label>
+              <div class="input-wrap">
+                <span class="prefix">±%</span>
+                <input type="number" id="mc-amp" value="20" min="1" max="40" step="1" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Simulations</label>
+              <div class="input-wrap">
+                <input type="number" id="mc-nsim" class="no-prefix" value="1000" min="1" max="10000" step="100" oninput="if(this.value>10000)this.value=10000;" />
+              </div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);font-style:italic;">Affiche les percentiles P10 / P25 / P50 / P75 / P90.</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="calc" onclick="calculer()">Calculer</button>
+        </div>
+      </div>
+
+    </div><!-- /col-left -->
+
+    <!-- COLONNE DROITE : Résultats -->
+    <div class="col-right">
+
+      <div id="results" class="hidden">
+
+        <div class="notice" id="notice">
+          <span class="icon">ℹ</span>
+          <span id="notice-text"></span>
+        </div>
+
+        <div class="notice notice-warn hidden" id="notice-warn">
+          <span class="icon">⚠️</span>
+          <span id="notice-warn-text"></span>
+        </div>
+
+        <div class="chart-card hidden" id="mc-stats-card">
+          <div class="card-title">Statistiques Monte Carlo</div>
+          <div class="mc-stats-grid" id="mc-stats-grid"></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="card-title">Évolution graphique</div>
+          <div class="chart-wrap">
+            <canvas id="chart"></canvas>
+          </div>
+          <div class="chart-legend" id="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#2563b0"></div>Valeur du placement</div>
+          </div>
+          <div id="sim-badges-wrap" class="hidden" style="margin-top:12px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;">Afficher / masquer</div>
+            <div class="sim-badges" id="sim-badges"></div>
+          </div>
+        </div>
+
+        <div class="tabs-card" id="table-card">
+          <div id="table-label" class="hidden" style="font-size:11px;color:var(--muted);font-style:italic;padding:10px 20px 0;font-family:'DM Mono',monospace;">5 simulations choisies au hasard parmi les simulations générées</div>
+          <div class="tabs-header" id="tabs-header"></div>
+          <div id="tabs-content"></div>
+        </div>
+
+      </div>
+
+    </div><!-- /col-right -->
+
+  </div><!-- /layout -->
+
+</div>
+
+<script>
+  const fmt    = n => '$\u202f' + n.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtPct = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '\u202f%';
+
+  let currentMode = 'fixe';
+  let retraitMode = 'montant';
+  let allSimulations = []; // [{rates[], rows[]}]
+  let visibleSims = new Set();
+
+  const SIM_COLORS = ['#e07b3a','#4c8fc9','#7c5cbf','#3dba7e','#e05c6a','#48b8b8','#c95cb5','#9ab83d','#4c8fc9','#8888cc'];
+
+  function toggleInflation() {
+    const on = document.getElementById('inflation-on').checked;
+    const input = document.getElementById('inflation');
+    const wrap = input.closest('.input-wrap');
+    input.disabled = !on;
+    wrap.style.opacity = on ? '1' : '0.4';
+  }
+
+  function setRetraitMode(mode) {
+    retraitMode = mode;
+    document.getElementById('btn-retrait-montant').classList.toggle('active', mode === 'montant');
+    document.getElementById('btn-retrait-pct').classList.toggle('active', mode === 'pct');
+    document.getElementById('retrait-montant-wrap').classList.toggle('hidden', mode !== 'montant');
+    document.getElementById('retrait-pct-wrap').classList.toggle('hidden', mode !== 'pct');
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('btn-fixe').classList.toggle('active', mode === 'fixe');
+    document.getElementById('btn-variable').classList.toggle('active', mode === 'variable');
+    document.getElementById('btn-monte').classList.toggle('active', mode === 'monte');
+    document.getElementById('var-options').classList.toggle('hidden', mode !== 'variable');
+    document.getElementById('monte-options').classList.toggle('hidden', mode !== 'monte');
+    const isVariable = mode === 'variable' || mode === 'monte';
+    document.getElementById('field-taux').style.opacity = isVariable ? '0.4' : '1';
+    document.getElementById('field-taux').style.pointerEvents = isVariable ? 'none' : 'auto';
+  }
+
+  function getVal(id) { return parseFloat(document.getElementById(id).value); }
+
+  function setErr(id, msg) {
+    const el = document.getElementById('err-' + id);
+    const inp = document.getElementById(id);
+    if (el) el.textContent = msg;
+    if (msg) inp.classList.add('error'); else inp.classList.remove('error');
+  }
+
+  // Génère des taux aléatoires contraints autour d'une moyenne cible
+  function genererTaux(n, moyenne, amplitude) {
+    const taux = [];
+    for (let i = 0; i < n; i++) {
+      const u1 = Math.random(), u2 = Math.random();
+      const z = Math.sqrt(-2 * Math.log(u1 + 1e-10)) * Math.cos(2 * Math.PI * u2);
+      const useUniform = Math.random() < 0.25;
+      let t;
+      if (useUniform) {
+        t = moyenne + (Math.random() * 2 - 1) * amplitude;
+      } else {
+        t = moyenne + z * (amplitude / 3);
+      }
+      t = Math.max(-amplitude, Math.min(amplitude, t));
+      taux.push(+t.toFixed(2));
+    }
+
+    // Garantir au moins un rendement négatif par tranche de 5 ans
+    for (let bloc = 0; bloc < Math.ceil(n / 5); bloc++) {
+      const debut = bloc * 5;
+      const fin   = Math.min(debut + 5, n);
+      const segment = taux.slice(debut, fin);
+      const hasNeg = segment.some(t => t < 0);
+      if (!hasNeg) {
+        const idx = debut + Math.floor(Math.random() * (fin - debut));
+        const neg = -(1 + Math.random() * (amplitude - 1));
+        taux[idx] = +Math.max(-amplitude, neg).toFixed(2);
+      }
+    }
+
+    // Correction de la moyenne : ajuster proportionnellement les taux positifs
+    // pour que la moyenne arithmétique reste proche de la cible
+    const moyActuelle = taux.reduce((s, t) => s + t, 0) / n;
+    const diff = moyenne - moyActuelle;
+    if (Math.abs(diff) > 0.5) {
+      for (let i = 0; i < taux.length; i++) {
+        if (taux[i] > 0) {
+          const ajuste = taux[i] + diff * 1.5;
+          taux[i] = +Math.max(-amplitude, Math.min(amplitude, ajuste)).toFixed(2);
+        }
+      }
+    }
+
+    return taux;
+  }
+
+  function calculerRows(valeur, taux_list, retrait, age, nb, inflation) {
+    const limite = nb > 0 ? nb : 200;
+    const infl = (inflation || 0) / 100;
+    const rows = [];
+    let v = valeur;
+    let retraitCourant = retrait;
+    for (let i = 0; i < Math.min(limite, taux_list.length); i++) {
+      if (v <= 0.01) break;
+      if (i > 0 && infl > 0) retraitCourant = retraitCourant * (1 + infl);
+      const anneeC  = age + i;
+      const tauxAnn = taux_list[i] / 100;
+      const rend    = v * tauxAnn;
+      const apres   = v + rend;
+      const ret     = Math.min(retraitCourant, apres);
+      const fin     = Math.max(0, apres - ret);
+      rows.push({ anneeC, debut: v, taux: taux_list[i], rend, apres, ret, fin });
+      v = fin;
+      if (v <= 0.01) break;
+    }
+    return rows;
+  }
+
+  function calculer() {
+    ['valeur','taux','retrait','annee','nb'].forEach(k => setErr(k, ''));
+
+    const valeur    = getVal('valeur');
+    const taux      = getVal('taux');
+    const age       = parseInt(document.getElementById('annee').value);
+    const nb        = parseInt(document.getElementById('nb').value);
+    const inflOn    = document.getElementById('inflation-on').checked;
+    const inflation = inflOn ? (parseFloat(document.getElementById('inflation').value) || 2) : 0;
+
+    // Résoudre le retrait selon le mode
+    let retrait;
+    if (retraitMode === 'pct') {
+      const pct = parseFloat(document.getElementById('retrait-pct').value) || 4;
+      if (isNaN(pct) || pct < 0) { setErr('retrait', 'Entrez un % ≥ 0.'); return; }
+      retrait = valeur * pct / 100;
+    } else {
+      retrait = getVal('retrait');
+      if (isNaN(retrait) || retrait < 0) { setErr('retrait', 'Entrez un montant ≥ 0.'); return; }
+    }
+
+    let ok = true;
+    if (!valeur || valeur <= 0)           { setErr('valeur',  'Entrez un montant positif.');        ok = false; }
+    if (currentMode === 'fixe' && (isNaN(taux) || taux < 0)) { setErr('taux', 'Entrez un taux ≥ 0.'); ok = false; }
+    if (!age || age < 1 || age > 120)     { setErr('annee',   'Âge entre 1 et 120 ans.');           ok = false; }
+    if (isNaN(nb) || nb < 0 || nb > 200)  { setErr('nb',      'Entrez un nombre entre 0 et 200.'); ok = false; }
+    if (!ok) return;
+
+    if (currentMode === 'fixe') {
+      calculerFixe(valeur, taux, retrait, age, nb, inflation);
+    } else if (currentMode === 'variable') {
+      calculerVariable(valeur, retrait, age, nb, inflation);
+    } else {
+      calculerMonteCarlo(valeur, retrait, age, nb, inflation);
+    }
+
+    const res = document.getElementById('results');
+    res.classList.remove('hidden');
+  }
+
+  // ── MODE FIXE ──────────────────────────────────────────────────────────────
+  function calculerFixe(valeur, taux, retrait, age, nb, inflation) {
+    const tauxList = Array(nb > 0 ? nb : 200).fill(taux);
+    const rows = calculerRows(valeur, tauxList, retrait, age, nb > 0 ? nb : 200, inflation);
+
+    afficherResume(rows, valeur, age, nb, null);
+    const inflLabel = inflation > 0 ? ` · inflation +${inflation}%` : '';
+    const limite = nb > 0 ? nb : 200;
+    const depleted = rows.length < limite && rows.length > 0 && rows[rows.length-1].fin <= 0.01;
+    afficherOnglets([{ label: 'Taux fixe · ' + taux + '%' + inflLabel, color: null, rows, depleted }]);
+    afficherGraphiqueFixe(rows, age, nb > 0 ? nb : 200);
+    document.getElementById('table-card').classList.remove('hidden');
+    document.getElementById('mc-stats-card').classList.add('hidden');
+    document.getElementById('table-label').classList.add('hidden');
+    let noticeText = '';
+    if (retraitMode === 'pct') {
+      const pct = parseFloat(document.getElementById('retrait-pct').value) || 4;
+      noticeText = `Retrait de ${pct}% = ${fmt(retrait)}/an. `;
+    }
+    if (inflation > 0)
+      noticeText += `Retrait ajusté à l'inflation de ${inflation}% par an. `;
+    if (retrait > rendInit && taux > 0)
+      noticeText += `Le retrait annuel (${fmt(retrait)}) dépasse le rendement initial (${fmt(rendInit)}). Le placement sera progressivement épuisé.`;
+    else if (retrait <= rendInit && taux > 0 && nb === 0 && inflation === 0)
+      noticeText += `Le retrait (${fmt(retrait)}) est inférieur au rendement initial (${fmt(rendInit)}). Le placement ne s'épuise pas — calcul limité à 200 ans.`;
+    else if (taux === 0)
+      noticeText += `Aucun rendement appliqué. Le placement diminue uniquement par les retraits.`;
+    document.getElementById('notice-text').textContent = noticeText;
+    document.getElementById('notice').classList.toggle('hidden', !noticeText);
+    document.getElementById('notice-warn').classList.add('hidden');
+  }
+
+  // ── MODE VARIABLE ──────────────────────────────────────────────────────────
+  function calculerVariable(valeur, retrait, age, nb, inflation) {
+    const moyenne  = getVal('var-moy') || 6;
+    const amplitude= getVal('var-amp') || 20;
+    const nSim     = Math.max(1, Math.min(10, parseInt(document.getElementById('var-nsim').value) || 5));
+    const longueur = nb > 0 ? nb : 60;
+
+    allSimulations = [];
+    for (let s = 0; s < nSim; s++) {
+      const rates = genererTaux(longueur, moyenne, amplitude);
+      const rows  = calculerRows(valeur, rates, retrait, age, longueur, inflation);
+      const moyReal = rates.slice(0, rows.length).reduce((a,b)=>a+b,0) / rows.length;
+      allSimulations.push({ rates, rows, moyReal });
+    }
+
+    visibleSims = new Set(allSimulations.map((_, i) => i));
+
+    // Badges de simulation
+    const badgesEl = document.getElementById('sim-badges');
+    badgesEl.innerHTML = '';
+    document.getElementById('sim-badges-wrap').classList.remove('hidden');
+    allSimulations.forEach((sim, i) => {
+      const b = document.createElement('span');
+      b.className = 'sim-badge active-sim';
+      b.style.background = SIM_COLORS[i];
+      b.style.borderColor = SIM_COLORS[i];
+      b.textContent = `Sim ${i+1} · moy ${sim.moyReal.toFixed(1)}%`;
+      b.onclick = () => toggleSim(i, b);
+      badgesEl.appendChild(b);
+    });
+
+    // Tableau = première simulation visible
+    const firstRows = allSimulations[0].rows;
+    afficherResume(firstRows, valeur, age, nb, allSimulations);
+    afficherOnglets(allSimulations.map((sim, i) => ({
+      label: `Sim ${i+1} · ${sim.moyReal.toFixed(1)}%/an`,
+      color: SIM_COLORS[i],
+      rows:  sim.rows,
+      depleted: sim.rows.length < longueur && sim.rows.length > 0 && sim.rows[sim.rows.length-1].fin <= 0.01,
+    })));
+    afficherGraphiqueVariable(allSimulations, age, longueur);
+    document.getElementById('table-card').classList.remove('hidden');
+    document.getElementById('mc-stats-card').classList.add('hidden');
+    document.getElementById('table-label').classList.add('hidden');
+
+    const pctLabel = retraitMode === 'pct'
+      ? ` Retrait de ${parseFloat(document.getElementById('retrait-pct').value)||4}% = ${fmt(retrait)}/an.`
+      : '';
+    document.getElementById('notice-text').textContent =
+      `Mode simulation : ${nSim} scénarios générés avec des taux oscillant de ±${amplitude}% autour d'une moyenne de ${moyenne}%.` +
+      pctLabel +
+      (inflation > 0 ? ` Retrait ajusté à l'inflation de ${inflation}% par an.` : '') +
+      ` Le tableau affiche la simulation 1.`;
+    document.getElementById('notice').classList.remove('hidden');
+
+    // Avertissement si des simulations s'épuisent avant le terme
+    const depletedSims = allSimulations
+      .map((sim, i) => ({ i, sim }))
+      .filter(({ sim }) => sim.rows.length < longueur && sim.rows.length > 0 && sim.rows[sim.rows.length-1].fin <= 0.01);
+    const warnEl = document.getElementById('notice-warn');
+    if (depletedSims.length > 0) {
+      const labels = depletedSims.map(({ i, sim }) => `Sim ${i+1} (à ${sim.rows[sim.rows.length-1].anneeC} ans)`).join(', ');
+      const s = depletedSims.length > 1 ? 's' : '';
+      document.getElementById('notice-warn-text').textContent =
+        `${depletedSims.length} simulation${s} épuisée${s} avant le terme : ${labels}.`;
+      warnEl.classList.remove('hidden');
+    } else {
+      warnEl.classList.add('hidden');
+    }
+  }
+
+  // ── MODE MONTE CARLO ───────────────────────────────────────────────────────
+  function calculerMonteCarlo(valeur, retrait, age, nb, inflation) {
+    const moyenne   = getVal('mc-moy') || 6;
+    const amplitude = getVal('mc-amp') || 20;
+    const nSim      = Math.max(1, Math.min(10000, parseInt(document.getElementById('mc-nsim').value) || 1000));
+    const longueur  = nb > 0 ? nb : 60;
+
+    // Générer toutes les simulations
+    const finalSoldes = [];
+    const allMcSims = [];
+    const percentileData = { p10:[], p25:[], p50:[], p75:[], p90:[] };
+    const allFins = Array.from({ length: longueur }, () => []);
+    let depletedCount = 0;
+
+    for (let s = 0; s < nSim; s++) {
+      const rates = genererTaux(longueur, moyenne, amplitude);
+      const rows  = calculerRows(valeur, rates, retrait, age, longueur, inflation);
+      allMcSims.push(rows);
+      const depleted = rows.length < longueur && rows.length > 0 && rows[rows.length-1].fin <= 0.01;
+      if (depleted) depletedCount++;
+
+      // Remplir toutes les années (0 après épuisement)
+      for (let i = 0; i < longueur; i++) {
+        allFins[i].push(rows[i] ? rows[i].fin : 0);
+      }
+      const finalFin = rows.length > 0 ? rows[rows.length-1].fin : 0;
+      finalSoldes.push(depleted ? 0 : finalFin);
+    }
+
+    // Calculer les percentiles pour chaque année
+    const labels = Array.from({ length: longueur }, (_, i) => age + i);
+    const pKeys = [10, 25, 50, 75, 90];
+    const pData = pKeys.map(() => []);
+    for (let i = 0; i < longueur; i++) {
+      const sorted = allFins[i].slice().sort((a, b) => a - b);
+      pKeys.forEach((p, pi) => {
+        const idx = Math.floor((p / 100) * (sorted.length - 1));
+        pData[pi].push(+sorted[idx].toFixed(2));
+      });
+    }
+
+    // Statistiques sur les soldes finaux
+    finalSoldes.sort((a, b) => a - b);
+    const mean = finalSoldes.reduce((s, v) => s + v, 0) / nSim;
+    const median = finalSoldes[Math.floor(nSim * 0.5)];
+    const p10f = finalSoldes[Math.floor(nSim * 0.10)];
+    const p90f = finalSoldes[Math.floor(nSim * 0.90)];
+    const survivalRate = ((nSim - depletedCount) / nSim * 100).toFixed(1);
+
+    // Afficher stats
+    document.getElementById('mc-stats-card').classList.remove('hidden');
+    document.getElementById('mc-stats-grid').innerHTML = `
+      <div class="mc-stat highlight">
+        <div class="mc-label">Taux de survie</div>
+        <div class="mc-value">${survivalRate}%</div>
+      </div>
+      <div class="mc-stat">
+        <div class="mc-label">Solde médian (P50)</div>
+        <div class="mc-value">${fmt(median)}</div>
+      </div>
+      <div class="mc-stat">
+        <div class="mc-label">Solde moyen</div>
+        <div class="mc-value">${fmt(mean)}</div>
+      </div>
+      <div class="mc-stat ${p10f <= 0 ? 'negative' : ''}">
+        <div class="mc-label">Scénario pessimiste (P10)</div>
+        <div class="mc-value">${fmt(p10f)}</div>
+      </div>
+      <div class="mc-stat positive">
+        <div class="mc-label">Scénario optimiste (P90)</div>
+        <div class="mc-value">${fmt(p90f)}</div>
+      </div>
+      <div class="mc-stat ${depletedCount > 0 ? 'negative' : 'positive'}">
+        <div class="mc-label">Simulations épuisées</div>
+        <div class="mc-value">${depletedCount} / ${nSim}</div>
+      </div>
+    `;
+
+    // Masquer badges sim, afficher graphique percentiles
+    document.getElementById('sim-badges-wrap').classList.add('hidden');
+    document.getElementById('notice-warn').classList.add('hidden');
+
+    afficherGraphiqueMonteCarlo(labels, pData, age);
+
+    // Choisir 5 simulations au hasard et les afficher en onglets
+    const mcSims = allMcSims;
+    const picked = [];
+    const used = new Set();
+    while (picked.length < Math.min(5, mcSims.length)) {
+      const idx = Math.floor(Math.random() * mcSims.length);
+      if (!used.has(idx)) { used.add(idx); picked.push({ idx, rows: mcSims[idx] }); }
+    }
+    const tabColors = ['#e07b3a','#4c8fc9','#7c5cbf','#3dba7e','#e05c6a'];
+    afficherOnglets(picked.map(({ idx, rows }, i) => {
+      const depleted = rows.length < longueur && rows.length > 0 && rows[rows.length-1].fin <= 0.01;
+      const moyTaux = (rows.reduce((s, r) => s + r.taux, 0) / rows.length).toFixed(1);
+      return { label: `Ex. ${i+1} · ${moyTaux}%/an`, color: tabColors[i], rows, depleted };
+    }));
+    document.getElementById('table-card').classList.remove('hidden');
+    document.getElementById('table-label').classList.remove('hidden');
+    document.getElementById('table-label').textContent = `5 simulations choisies au hasard parmi les ${nSim} simulations générées`;
+
+    const pctLabel = retraitMode === 'pct'
+      ? ` Retrait de ${parseFloat(document.getElementById('retrait-pct').value)||4}% = ${fmt(retrait)}/an.`
+      : '';
+    document.getElementById('notice-text').textContent =
+      `Monte Carlo : ${nSim} simulations avec taux oscillant de ±${amplitude}% autour de ${moyenne}%.${pctLabel}` +
+      (inflation > 0 ? ` Retrait ajusté à l'inflation de ${inflation}% par an.` : '') +
+      ` 5 exemples choisis au hasard sont affichés dans le tableau.`;
+    document.getElementById('notice').classList.remove('hidden');
+  }
+
+  function afficherGraphiqueMonteCarlo(labels, pData, age) {
+    if (window._chart) window._chart.destroy();
+    const ctx = document.getElementById('chart').getContext('2d');
+    const c = getThemeColors();
+
+    // Couleurs des bandes
+    const bandColors = [
+      { fill: 'rgba(37,99,176,0.08)',  border: 'transparent' }, // P10
+      { fill: 'rgba(37,99,176,0.14)',  border: 'transparent' }, // P25
+      { fill: 'rgba(37,99,176,0.22)',  border: c.accent      }, // P50 médiane
+      { fill: 'rgba(37,99,176,0.14)',  border: 'transparent' }, // P75
+      { fill: 'rgba(37,99,176,0.08)',  border: 'transparent' }, // P90
+    ];
+    const pLabels = ['P10', 'P25', 'P50 (médiane)', 'P75', 'P90'];
+
+    const datasets = pData.map((data, i) => ({
+      label: pLabels[i],
+      data,
+      borderColor: bandColors[i].border,
+      backgroundColor: bandColors[i].fill,
+      borderWidth: i === 2 ? 2.5 : 0,
+      pointRadius: 0,
+      tension: 0.35,
+      fill: i === 0 ? false : i === 1 ? 0 : i === 3 ? 2 : i === 4 ? 3 : false,
+    }));
+
+    window._chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: chartOptions(c, 'Âge')
+    });
+
+    // Légende
+    const legendEl = document.getElementById('chart-legend');
+    legendEl.innerHTML = `
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(37,99,176,0.15);border:1px solid var(--border);"></div>P10 – P25</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(37,99,176,0.25);border:1px solid var(--border);"></div>P25 – P75</div>
+      <div class="legend-item"><div class="legend-dot" style="background:${c.accent};"></div>P50 médiane</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(37,99,176,0.15);border:1px solid var(--border);"></div>P75 – P90</div>
+    `;
+  }
+
+  function toggleSim(idx, badge) {
+    if (visibleSims.has(idx)) {
+      if (visibleSims.size <= 1) return; // garder au moins 1
+      visibleSims.delete(idx);
+      badge.style.background = 'transparent';
+      badge.style.color = SIM_COLORS[idx];
+      badge.classList.remove('active-sim');
+    } else {
+      visibleSims.add(idx);
+      badge.style.background = SIM_COLORS[idx];
+      badge.style.color = '#fff';
+      badge.classList.add('active-sim');
+    }
+    // Mettre à jour le graphique
+    if (window._chart) {
+      window._chart.data.datasets.forEach((ds, i) => {
+        ds.hidden = !visibleSims.has(i);
+      });
+      window._chart.update();
+    }
+  }
+
+  // ── RÉSUMÉ ─────────────────────────────────────────────────────────────────
+  function afficherResume(rows, valeur, age, nb, sims) {
+    // Éléments supprimés — fonction conservée pour compatibilité
+  }
+
+  // ── TABLEAU AVEC ONGLETS ──────────────────────────────────────────────────
+  function buildTableHTML(rows) {
+    const thead = `<thead><tr>
+      <th>Âge</th>
+      <th>Valeur début</th>
+      <th>Rendement (%)</th>
+      <th>Rendement ($)</th>
+      <th>Après rendement</th>
+      <th>Retrait</th>
+      <th>Valeur fin</th>
+    </tr></thead>`;
+    const tbody = '<tbody>' + rows.map(r => {
+      const finClass  = r.fin  <= 0.01 ? 'val-fin-zero' : 'val-fin-positive';
+      const tauxClass = r.taux  < 0    ? 'taux-neg'     : 'taux-pos';
+      return `<tr>
+        <td>${r.anneeC}</td>
+        <td>${fmt(r.debut)}</td>
+        <td class="${tauxClass}">${fmtPct(r.taux)}</td>
+        <td>${fmt(r.rend)}</td>
+        <td>${fmt(r.apres)}</td>
+        <td>${fmt(r.ret)}</td>
+        <td class="${finClass}">${fmt(r.fin)}</td>
+      </tr>`;
+    }).join('') + '</tbody>';
+    return `<div class="table-wrap"><table>${thead}${tbody}</table></div>`;
+  }
+
+  function afficherOnglets(tabsData) {
+    // tabsData = [{label, color, rows}]
+    const header  = document.getElementById('tabs-header');
+    const content = document.getElementById('tabs-content');
+    header.innerHTML  = '';
+    content.innerHTML = '';
+
+    tabsData.forEach((tab, i) => {
+      // Bouton onglet
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+      const starHtml = tab.depleted ? ' <span style="color:#e05c6a;font-size:15px;line-height:1;vertical-align:middle;" title="Épuisé avant le terme">⚠️</span>' : '';
+      btn.innerHTML = tab.color
+        ? `<span class="tab-dot" style="background:${tab.color}"></span>${tab.label}${starHtml}`
+        : tab.label + starHtml;
+      btn.onclick = () => switchTab(i);
+      header.appendChild(btn);
+
+      // Panneau
+      const pane = document.createElement('div');
+      pane.className = 'tab-pane' + (i === 0 ? ' active' : '');
+      pane.id = `tab-pane-${i}`;
+      pane.innerHTML = buildTableHTML(tab.rows);
+      content.appendChild(pane);
+    });
+  }
+
+  function switchTab(idx) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+    document.querySelectorAll('.tab-pane').forEach((p, i) => p.classList.toggle('active', i === idx));
+  }
+
+  // ── GRAPHIQUE MODE FIXE ────────────────────────────────────────────────────
+  function afficherGraphiqueFixe(rows, age, nb) {
+    // Construire la plage complète d'années
+    const fullLabels = Array.from({ length: nb }, (_, i) => age + i);
+    const dataMap = Object.fromEntries(rows.map(r => [r.anneeC, r.fin]));
+    const dataValeur = fullLabels.map(a => dataMap[a] != null ? +dataMap[a].toFixed(2) : 0);
+
+    if (window._chart) window._chart.destroy();
+    const ctx = document.getElementById('chart').getContext('2d');
+    const c = getThemeColors();
+
+    const grad = ctx.createLinearGradient(0, 0, 0, 340);
+    grad.addColorStop(0, c.gradStart);
+    grad.addColorStop(1, 'rgba(37,99,176,0.01)');
+
+    window._chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: fullLabels,
+        datasets: [{
+          label: 'Valeur du placement',
+          data: dataValeur,
+          borderColor: c.accent,
+          backgroundColor: grad,
+          borderWidth: 2.5,
+          pointRadius: fullLabels.length > 40 ? 0 : 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: c.accent,
+          pointBorderColor: c.pointBorder,
+          pointBorderWidth: 2,
+          tension: 0.35,
+          fill: true,
+        }]
+      },
+      options: chartOptions(c, 'Âge')
+    });
+
+    // Légende
+    document.getElementById('sim-badges-wrap').classList.add('hidden');
+    const legendEl = document.getElementById('chart-legend');
+    legendEl.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:${c.accent}"></div>Valeur du placement</div>`;
+  }
+
+  // ── GRAPHIQUE MODE VARIABLE ────────────────────────────────────────────────
+  function afficherGraphiqueVariable(sims, age, nb) {
+    if (window._chart) window._chart.destroy();
+    const ctx = document.getElementById('chart').getContext('2d');
+    const c = getThemeColors();
+
+    // Plage complète d'années
+    const fullLabels = Array.from({ length: nb }, (_, i) => age + i);
+
+    const datasets = sims.map((sim, i) => {
+      const map = Object.fromEntries(sim.rows.map(r => [r.anneeC, r.fin]));
+      return {
+        label: `Sim ${i+1} (moy ${sim.moyReal.toFixed(1)}%)`,
+        data: fullLabels.map(a => map[a] != null ? +map[a].toFixed(2) : 0),
+        borderColor: SIM_COLORS[i],
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: fullLabels.length > 40 ? 0 : 3,
+        pointHoverRadius: 5,
+        tension: 0.35,
+        fill: false,
+        spanGaps: true,
+        hidden: !visibleSims.has(i),
+      };
+    });
+
+    window._chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: fullLabels, datasets },
+      options: chartOptions(c, 'Âge')
+    });
+
+    // Légende dynamique
+    const legendEl = document.getElementById('chart-legend');
+    legendEl.innerHTML = sims.map((sim, i) =>
+      `<div class="legend-item"><div class="legend-dot" style="background:${SIM_COLORS[i]}"></div>Sim ${i+1} · ${sim.moyReal.toFixed(1)}%/an</div>`
+    ).join('');
+  }
+
+  function chartOptions(c, xLabel) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: c.tooltipBg,
+          borderColor: c.tooltipBorder,
+          borderWidth: 1,
+          titleColor: c.accent,
+          bodyColor: c.tooltipBody,
+          padding: 12,
+          titleFont: { family: 'DM Mono', size: 12 },
+          bodyFont: { family: 'DM Mono', size: 12 },
+          callbacks: {
+            title: items => `Âge ${items[0].label} ans`,
+            label: item => {
+              if (item.raw == null) return null;
+              const v = item.raw.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              return `  ${item.dataset.label} : $\u202f${v}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: c.muted, font: { family: 'DM Mono', size: 11 }, maxTicksLimit: 100, autoSkip: false },
+          grid: { color: c.border },
+          border: { color: c.borderLine },
+        },
+        y: {
+          ticks: {
+            color: c.accent,
+            font: { family: 'DM Mono', size: 11 },
+            callback: v => '$\u202f' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0)),
+          },
+          grid: { color: c.grid },
+          border: { color: c.borderLine, dash: [4,4] },
+        }
+      }
+    };
+  }
+
+  // ── THÈME ──────────────────────────────────────────────────────────────────
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    document.getElementById('toggle-icon').textContent  = isDark ? '🌙' : '☀️';
+    document.getElementById('toggle-label').textContent = isDark ? 'Sombre' : 'Clair';
+    if (window._chart) updateChartTheme();
+  }
+
+  function getThemeColors() {
+    const dark = document.documentElement.classList.contains('dark');
+    return {
+      accent:      dark ? '#4c8fc9' : '#2563b0',
+      muted:       dark ? '#6b7590' : '#7a829a',
+      border:      dark ? 'rgba(30,37,53,0.6)'    : 'rgba(180,185,200,0.3)',
+      borderLine:  dark ? '#1e2535' : '#dde1ea',
+      grid:        dark ? 'rgba(37,99,176,0.07)' : 'rgba(37,99,176,0.1)',
+      tooltipBg:   dark ? '#1a2030' : '#ffffff',
+      tooltipBorder: dark ? '#1e2535' : '#dde1ea',
+      tooltipBody: dark ? '#e8eaf0' : '#1a1f2e',
+      pointBorder: dark ? '#0b0e13' : '#ffffff',
+      gradStart:   dark ? 'rgba(37,99,176,0.25)' : 'rgba(37,99,176,0.18)',
+    };
+  }
+
+  function updateChartTheme() {
+    const c = getThemeColors();
+    const chart = window._chart;
+    const ctx = document.getElementById('chart').getContext('2d');
+
+    if (currentMode === 'fixe') {
+      const grad = ctx.createLinearGradient(0, 0, 0, 340);
+      grad.addColorStop(0, c.gradStart);
+      grad.addColorStop(1, 'rgba(37,99,176,0.01)');
+      chart.data.datasets[0].borderColor = c.accent;
+      chart.data.datasets[0].backgroundColor = grad;
+      chart.data.datasets[0].pointBackgroundColor = c.accent;
+      chart.data.datasets[0].pointBorderColor = c.pointBorder;
+      document.querySelector('#chart-legend .legend-dot').style.background = c.accent;
+    }
+
+    chart.options.plugins.tooltip.backgroundColor = c.tooltipBg;
+    chart.options.plugins.tooltip.borderColor     = c.tooltipBorder;
+    chart.options.plugins.tooltip.titleColor      = c.accent;
+    chart.options.plugins.tooltip.bodyColor       = c.tooltipBody;
+    chart.options.scales.x.ticks.color  = c.muted;
+    chart.options.scales.x.grid.color   = c.border;
+    chart.options.scales.x.border.color = c.borderLine;
+    chart.options.scales.y.ticks.color  = c.accent;
+    chart.options.scales.y.grid.color   = c.grid;
+    chart.options.scales.y.border.color = c.borderLine;
+    chart.update();
+  }
+
+  // Enter key
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') calculer(); });
+
+  // Valeurs par défaut
+  document.getElementById('valeur').value  = 450000;
+  document.getElementById('taux').value    = 5;
+  document.getElementById('retrait').value = 20000;
+  document.getElementById('annee').value   = 55;
+  document.getElementById('nb').value      = 40;
+</script>
+</body>
+</html>
