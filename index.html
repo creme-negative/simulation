@@ -1,1616 +1,2404 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simulation de Rendement avec Retraits Annuels</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outils de planification de retraite</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ===================== CSS VARIABLES ===================== */
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #e8eef5;
+    --border: #d1dce8;
+    --accent: #2563eb;
+    --accent2: #0891b2;
+    --gold: #d97706;
+    --green: #059669;
+    --red: #dc2626;
+    --orange: #ea580c;
+    --text: #0f172a;
+    --muted: #64748b;
+    --subtle: #94a3b8;
+    --shadow: 0 1px 4px rgba(15,23,42,0.08);
+    --pension: #d97706;
+    --rrq: #2563eb;
+    --psv: #059669;
+    --total: #ea580c;
+    --header-h: 56px;
+    --nav-w: 220px;
+  }
 
-    :root {
-      --bg:        #f4f5f7;
-      --surface:   #ffffff;
-      --border:    #dde1ea;
-      --accent:    #2563b0;
-      --accent2:   #0ea5e9;
-      --text:      #1a1f2e;
-      --muted:     #7a829a;
-      --positive:  #1f8f5e;
-      --negative:  #c0374a;
-      --row-even:  #f8f9fb;
-      --row-hover: #eef3fb;
-      --thead-bg:  #f0f2f6;
-      --tbody-border: rgba(180,185,200,0.4);
-    }
+  :root.dark {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2335;
+    --border: #1e2d45;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --gold: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --orange: #f97316;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --subtle: #64748b;
+    --shadow: 0 1px 4px rgba(0,0,0,0.3);
+    --pension: #f59e0b;
+    --rrq: #3b82f6;
+    --psv: #10b981;
+    --total: #f97316;
+  }
 
-    html.dark {
-      --bg:        #0b0e13;
-      --surface:   #131720;
-      --border:    #1e2535;
-      --accent:    #4c8fc9;
-      --accent2:   #64b5f6;
-      --text:      #e8eaf0;
-      --muted:     #6b7590;
-      --positive:  #3dba7e;
-      --negative:  #e05c6a;
-      --row-even:  #0f1219;
-      --row-hover: #141c2a;
-      --thead-bg:  #0d1018;
-      --tbody-border: rgba(30,37,53,0.6);
-    }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Theme toggle */
-    .theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 24px;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 7px 14px 7px 10px;
-      cursor: pointer;
-      font-family: 'Outfit', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.2s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      user-select: none;
-    }
-    .theme-toggle:hover {
-      color: var(--text);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    }
-    .toggle-track {
-      width: 34px;
-      height: 20px;
-      background: var(--border);
-      border-radius: 999px;
-      position: relative;
-      transition: background 0.25s;
-      flex-shrink: 0;
-    }
-    html.dark .toggle-track { background: var(--accent); }
-    .toggle-thumb {
-      position: absolute;
-      top: 3px; left: 3px;
-      width: 14px; height: 14px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.25s cubic-bezier(.4,0,.2,1), background 0.25s;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    }
-    html.dark .toggle-thumb { transform: translateX(14px); }
-    .toggle-icon { font-size: 15px; line-height: 1; }
+  html, body {
+    height: 100%;
+    transition: background 0.3s, color 0.3s;
+  }
 
-    html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Outfit', sans-serif;
-      font-weight: 300;
-      min-height: 100vh;
-      overflow-x: hidden;
-      transition: background 0.25s, color 0.25s;
-    }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-    /* Background grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 48px 48px;
-      opacity: 0.35;
-      pointer-events: none;
-      z-index: -1;
-    }
+  :root.dark body::before {
+    background-image:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+  }
 
-    .wrapper {
-      position: relative;
-      width: 100%;
-      max-width: 100%;
-      margin: 0 auto;
-      padding: 0 32px 80px;
-    }
+  /* ===================== HEADER ===================== */
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: var(--header-h);
+    background: #1a3a6b;
+    border-bottom: none;
+    padding: 0 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    transition: background 0.3s;
+  }
 
-    /* Two-column layout */
-    .layout {
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 28px;
-      align-items: start;
-      padding-top: 24px;
-    }
-    .col-left {
-      position: sticky;
-      top: calc(var(--header-h) + 12px);
-    }
-    .col-right { min-width: 0; }
+  :root.dark header { background: #0f2040; }
 
-    @media (max-width: 960px) {
-      .layout { grid-template-columns: 1fr; }
-      .col-left { position: static; }
-      .wrapper { padding: 0 16px 60px; }
-    }
+  header .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
 
-    /* Header */
-    :root { --header-h: 56px; }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      height: var(--header-h);
-      margin-bottom: 0;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      padding: 0 0 0 0;
-      animation: fadeDown 0.7s ease both;
-      transition: background 0.25s, border-color 0.25s;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      padding: 0 32px;
-    }
-    header .eyebrow {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      color: var(--accent);
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-    header h1 {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(1.1rem, 2vw, 1.5rem);
-      font-weight: 400;
-      line-height: 1.2;
-      color: var(--text);
-      white-space: nowrap;
-    }
-    header h1 em {
-      font-style: italic;
-      color: var(--accent);
-    }
-    header p {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 300;
-      white-space: nowrap;
-    }
-    .header-divider {
-      width: 1px;
-      height: 28px;
-      background: var(--border);
-      flex-shrink: 0;
-    }
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    font-weight: 400;
+    color: #ffffff;
+    white-space: nowrap;
+  }
 
-    /* Card */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px 28px;
-      margin-bottom: 20px;
-      animation: fadeUp 0.6s ease both;
-    }
-    .card:nth-child(2) { animation-delay: 0.1s; }
-    .card:nth-child(3) { animation-delay: 0.2s; }
+  header h1 em {
+    font-style: italic;
+    color: #93c5fd;
+  }
 
-    .card-title {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .card-title::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+  .header-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(255,255,255,0.2);
+    flex-shrink: 0;
+  }
 
-    /* Form grid */
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
+  header p {
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 380px;
+  }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .field label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .field .input-wrap {
-      position: relative;
-    }
-    .field .prefix {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--accent);
-      font-family: 'DM Mono', monospace;
-      font-size: 14px;
-      pointer-events: none;
-    }
-    .field input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      font-size: 15px;
-      padding: 12px 14px 12px 30px;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      -moz-appearance: textfield;
-    }
-    .field input.no-prefix { padding-left: 14px; }
-    .field input::-webkit-outer-spin-button,
-    .field input::-webkit-inner-spin-button { -webkit-appearance: none; }
-    .field input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37,99,176,0.12);
-    }
-    .field input.error { border-color: var(--negative); }
+  .header-disclaimer {
+    color: rgba(255,255,255,0.55);
+    font-size: 11px;
+    font-style: italic;
+    white-space: nowrap;
+  }
 
-    /* Button */
-    .btn-row {
-      display: flex;
-      justify-content: center;
-      margin-top: 32px;
-    }
-    button.calc {
-      background: var(--accent);
-      color: #ffffff;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 48px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-      position: relative;
-      overflow: hidden;
-    }
-    button.calc::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0.08);
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    button.calc:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,176,0.25); }
-    button.calc:hover::after { opacity: 1; }
-    button.calc:active { transform: translateY(0); }
+  .header-spacer { flex: 1; }
 
-    /* Error message */
-    .err-msg {
-      color: var(--negative);
-      font-size: 12px;
-      margin-top: 4px;
-      min-height: 16px;
-    }
+  .header-icon-wrap {
+    font-size: 22px;
+    text-align: center;
+    flex-shrink: 0;
+    width: calc(var(--nav-collapsed-w) - 24px);
+  }
 
-    /* Summary cards */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-      animation: fadeUp 0.5s ease both;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 22px;
-      position: relative;
-      overflow: hidden;
-    }
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-    }
-    .stat-card.gold::before  { background: var(--accent); }
-    .stat-card.blue::before  { background: var(--accent2); }
-    .stat-card.green::before { background: var(--positive); }
-    .stat-card.red::before   { background: var(--negative); }
+  /* ===================== THEME TOGGLE ===================== */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 999px;
+    padding: 7px 14px 7px 10px;
+    cursor: pointer;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.8);
+    transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    user-select: none;
+  }
 
-    .stat-card .label {
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-    .stat-card .value {
-      font-family: 'DM Mono', monospace;
-      font-size: 20px;
-      font-weight: 500;
-      color: var(--text);
-    }
-    .stat-card .sub {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
+  .theme-toggle:hover {
+    background: rgba(255,255,255,0.2);
+    color: #ffffff;
+  }
 
-    /* Table */
-    .table-wrap {
-      overflow-x: auto;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: 'DM Mono', monospace;
-      font-size: 13px;
-    }
-    thead th {
-      background: var(--thead-bg);
-      padding: 13px 18px;
-      text-align: right;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    thead th:first-child { text-align: center; }
+  .toggle-track {
+    width: 34px; height: 20px;
+    background: var(--border);
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.25s;
+    flex-shrink: 0;
+  }
 
-    tbody tr {
-      border-bottom: 1px solid var(--tbody-border);
-      transition: background 0.15s;
-    }
-    tbody tr:nth-child(even) { background: var(--row-even); }
-    tbody tr:hover { background: var(--row-hover); }
-    tbody tr:last-child { border-bottom: none; }
+  :root.dark .toggle-track { background: var(--accent); }
 
-    tbody td {
-      padding: 11px 18px;
-      text-align: right;
-      color: var(--text);
-      white-space: nowrap;
-    }
-    tbody td:first-child {
-      text-align: center;
-      color: var(--accent);
-      font-weight: 500;
-    }
-    tbody td.val-fin-positive { color: var(--positive); }
-    tbody td.val-fin-zero     { color: var(--negative); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
 
-    /* Notice */
-    .notice {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      background: #dbeafe;
-      border: 1px solid rgba(37,99,176,0.3);
-      border-left: 3px solid var(--accent);
-      border-radius: 10px;
-      padding: 14px 18px;
-      font-size: 13px;
-      color: #1e3a5f;
-      margin-bottom: 24px;
-      animation: fadeUp 0.5s ease both;
-    }
-    html.dark .notice {
-      background: #1a2a40;
-      color: #93c5fd;
-      border-color: rgba(76,143,201,0.3);
-    }
-    .notice-warn {
-      background: #fee2e2;
-      border-color: #c0374a;
-      border-left-color: #c0374a;
-      color: #7f1d1d;
-    }
-    html.dark .notice-warn {
-      background: #3b1111;
-      color: #fca5a5;
-      border-color: #e05c6a;
-      border-left-color: #e05c6a;
-    }
-    .notice-warn .icon { color: #c0374a !important; }
-    html.dark .notice-warn .icon { color: #e05c6a !important; }
-    .notice span.icon { color: var(--accent); font-size: 16px; flex-shrink: 0; }
+  :root.dark .toggle-thumb { transform: translateX(14px); }
 
-    /* Chart */
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px 36px;
-      margin-bottom: 32px;
-      animation: fadeUp 0.6s ease both;
-    }
-    .chart-wrap {
-      position: relative;
-      height: 340px;
-    }
-    .chart-legend {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      margin-top: 20px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .legend-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+  .toggle-icon { font-size: 15px; line-height: 1; }
 
-    /* Mode rendement variable */
-    .mode-toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-    .mode-btn {
-      flex: 1;
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1.5px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-family: 'Outfit', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
-      white-space: nowrap;
-    }
-    .mode-btn.active {
-      border-color: var(--accent);
-      background: rgba(37,99,176,0.08);
-      color: var(--accent);
-    }
-    html.dark .mode-btn.active {
-      background: rgba(37,99,176,0.1);
-    }
-    .mode-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+  /* ===================== APP SHELL ===================== */
+  .app-shell {
+    display: flex;
+    padding-top: var(--header-h);
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
 
-    .var-options {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      margin-top: 8px;
-      margin-bottom: 4px;
-    }
-    .var-options-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .sim-badges {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-    .sim-badge {
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(37,99,176,0.1);
-      color: var(--accent);
-      border: 1px solid rgba(37,99,176,0.25);
-      cursor: pointer;
-      transition: background 0.15s;
-      user-select: none;
-    }
-    .sim-badge:hover { background: rgba(37,99,176,0.2); }
-    .sim-badge.active-sim {
-      background: var(--accent);
-      color: #fff;
-    }
-    html.dark .sim-badge.active-sim { color: #0b0e13; }
+  /* ===================== LEFT NAV ===================== */
+  :root {
+    --nav-bg: #1a3a6b;
+    --nav-bg-dark: #0f2040;
+    --nav-hover: rgba(255,255,255,0.08);
+    --nav-active-bg: rgba(255,255,255,0.15);
+    --nav-text: rgba(255,255,255,0.65);
+    --nav-text-active: #ffffff;
+    --nav-border-color: rgba(255,255,255,0.1);
+    --nav-collapsed-w: 56px;
+  }
 
-    /* Taux colorés dans le tableau */
-    td.taux-pos { color: var(--positive); }
-    td.taux-neg { color: var(--negative); }
+  .left-nav {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    bottom: 0;
+    width: var(--nav-w);
+    background: var(--nav-bg);
+    border-right: none;
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    transition: width 0.28s cubic-bezier(.4,0,.2,1), background 0.3s;
+    overflow: hidden;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  }
 
-    /* Onglets tableau */
-    .tabs-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-    }
-    .tabs-header {
-      display: flex;
-      flex-wrap: wrap;
-      border-bottom: 1px solid var(--border);
-      background: var(--thead-bg);
-      gap: 0;
-    }
-    .tab-btn {
-      flex-shrink: 0;
-      padding: 10px 16px;
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      border-right: 1px solid var(--border);
-      cursor: pointer;
-      transition: color 0.18s, border-color 0.18s, background 0.18s;
-      white-space: nowrap;
-      position: relative;
-    }
-    .tab-btn:last-child { border-right: none; }
-    .tab-btn:hover { color: var(--text); background: rgba(128,128,128,0.06); }
-    .tab-btn.active { color: var(--surface); border-bottom-color: var(--accent); background: var(--accent); }
-    html.dark .tab-btn.active { color: #0b0e13; }
-    .tab-btn .tab-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 7px;
-      vertical-align: middle;
-      margin-top: -2px;
-    }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
+  :root.dark .left-nav { background: var(--nav-bg-dark); }
 
-    /* Retrait mode toggle */
-    .retrait-mode-toggle {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .retrait-btn {
-      flex: 1;
-      padding: 5px 8px;
-      border-radius: 7px;
-      border: 1.5px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-family: 'Outfit', sans-serif;
-      font-size: 11px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
-    }
-    .retrait-btn.active {
-      border-color: var(--accent);
-      background: rgba(37,99,176,0.08);
-      color: var(--accent);
-    }
-    .retrait-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+  /* Collapsed state */
+  .left-nav.collapsed { width: var(--nav-collapsed-w); }
 
-    /* Inflation toggle */
-    .inflation-toggle {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 12px;
-      color: var(--muted);
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-    .checkbox-label input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
-      accent-color: var(--accent);
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .checkbox-label:hover { color: var(--text); }
-    .inflation-field .input-wrap { margin-top: 0; }
+  .left-nav.collapsed .nav-section-title,
+  .left-nav.collapsed .nav-divider {
+    opacity: 0; pointer-events: none;
+    height: 0; margin: 0; padding: 0; overflow: hidden;
+  }
 
-    /* Monte Carlo stats */
-    .mc-stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 4px;
-    }
-    .mc-stat {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      text-align: center;
-    }
-    .mc-stat .mc-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .mc-stat .mc-value {
-      font-family: 'DM Mono', monospace;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-    }
-    .mc-stat.highlight .mc-value { color: var(--accent); font-size: 15px; }
-    .mc-stat.positive .mc-value  { color: var(--positive); }
-    .mc-stat.negative .mc-value  { color: var(--negative); }
+  .left-nav.collapsed .nav-label {
+    opacity: 0; width: 0; overflow: hidden; flex-shrink: 0;
+  }
 
-    /* Hidden */
-    .hidden { display: none; }
+  .left-nav.collapsed .nav-item {
+    padding: 14px 0;
+    justify-content: center;
+    gap: 0;
+  }
 
-    /* Animations */
-    @keyframes fadeDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+  .left-nav.collapsed .nav-item::before { display: none; }
 
-    @media (max-width: 600px) {
-      .card { padding: 24px 20px; }
-      .wrapper { padding: 40px 16px 60px; }
-    }
-  </style>
+  .left-nav.collapsed .nav-icon {
+    width: var(--nav-collapsed-w);
+    text-align: center;
+    font-size: 20px;
+  }
+
+  .left-nav.collapsed .nav-toggle-btn {
+    justify-content: center;
+    padding: 14px 0;
+    gap: 0;
+  }
+
+  /* Toggle button at top of nav */
+  .nav-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--nav-border-color);
+    cursor: pointer;
+    color: var(--nav-text-active);
+    width: 100%;
+    transition: background 0.2s, padding 0.28s;
+  }
+
+  .nav-toggle-btn:hover { background: var(--nav-hover); }
+
+  .nav-toggle-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    width: 22px;
+    text-align: center;
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    line-height: 1;
+  }
+
+  .left-nav.collapsed .nav-toggle-icon { transform: rotate(180deg); }
+
+  .nav-toggle-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+
+  .left-nav.collapsed .nav-toggle-label { opacity: 0; width: 0; overflow: hidden; }
+
+  .nav-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--nav-text);
+    padding: 18px 20px 8px;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 20px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    color: var(--nav-text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.2s, background 0.2s, padding 0.28s, justify-content 0.28s;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .nav-item:hover {
+    background: var(--nav-hover);
+    color: var(--nav-text-active);
+  }
+
+  .nav-item.active {
+    color: var(--nav-text-active);
+    background: var(--nav-active-bg);
+    font-weight: 600;
+  }
+
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: #60a5fa;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .nav-icon {
+    font-size: 17px;
+    flex-shrink: 0;
+    width: 22px;
+    text-align: center;
+  }
+
+  .nav-label { line-height: 1.2; transition: opacity 0.2s; }
+  .nav-label small {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.4);
+    margin-top: 1px;
+  }
+
+  .nav-divider {
+    height: 1px;
+    background: var(--nav-border-color);
+    margin: 8px 16px;
+    transition: opacity 0.2s;
+  }
+
+  /* Tooltip for collapsed icons */
+  .nav-item[data-tooltip] { position: relative; }
+  .left-nav.collapsed .nav-item[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(var(--nav-collapsed-w) + 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1a3a6b;
+    color: #fff;
+    font-size: 12px;
+    font-family: 'Instrument Sans', sans-serif;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    z-index: 200;
+  }
+
+  /* ===================== PAGE CONTENT ===================== */
+  .page-content {
+    margin-left: var(--nav-w);
+    flex: 1;
+    min-width: 0;
+    transition: margin-left 0.28s cubic-bezier(.4,0,.2,1);
+  }
+
+  .page-content.nav-collapsed { margin-left: var(--nav-collapsed-w); }
+
+  .page {
+    display: none;
+    animation: fadeUp 0.3s ease forwards;
+  }
+
+  .page.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===================== MONTE CARLO PAGE ===================== */
+  .mc-container {
+    width: 100%;
+    padding: 28px 32px;
+  }
+
+  .mc-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  @media (max-width: 1000px) {
+    .mc-layout { grid-template-columns: 1fr; }
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .panel-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-header .icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+
+  .panel-header h2 {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .pct-popover-wrap { margin-left: auto; position: relative; }
+
+  .pct-popover-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 4px 9px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--muted);
+    transition: border-color 0.2s, background 0.2s;
+    line-height: 1;
+  }
+
+  .pct-popover-btn:hover { border-color: var(--accent); background: var(--surface2); }
+
+  .pct-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+    z-index: 200;
+    min-width: 300px;
+    overflow: hidden;
+  }
+
+  .pct-popover.open { display: block; }
+
+  .pct-popover-title {
+    padding: 11px 16px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .params-panel { position: relative; margin-top: 10px; overflow: visible !important; }
+
+  .params-label {
+    position: absolute;
+    top: -10px; left: 16px;
+    background: var(--surface);
+    padding: 0 8px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    z-index: 1;
+  }
+
+  .panel-body { padding: 24px; }
+
+  .field { margin-bottom: 20px; }
+
+  label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  label.label-sm { font-size: 0.65rem; }
+
+  .input-wrap { position: relative; }
+
+  .input-prefix {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem; color: var(--muted);
+    pointer-events: none;
+  }
+
+  .input-suffix {
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem; color: var(--muted);
+    pointer-events: none;
+  }
+
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  }
+
+  .has-prefix input { padding-left: 32px; }
+  .has-suffix input { padding-right: 40px; }
+
+  select { cursor: pointer; appearance: none; }
+
+  .inflation-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .inflation-box:has(#inflationCheck:checked) {
+    border-color: rgba(59,130,246,0.3);
+    background: rgba(59,130,246,0.03);
+  }
+
+  .inflation-inner { display: flex; align-items: center; gap: 10px; transition: opacity 0.3s; }
+  .inflation-inner.disabled { opacity: 0.35; pointer-events: none; }
+  .inflation-inner label { margin: 0; white-space: nowrap; font-size: 0.65rem; }
+  .inflation-inner .input-wrap { flex: 1; max-width: 110px; }
+  .inflation-inner input { padding: 8px 32px 8px 14px; font-size: 0.82rem; }
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .checkbox-field:hover { border-color: var(--accent); }
+  .checkbox-field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .checkbox-field .cb-label { font-size: 0.60rem; font-weight: 500; color: var(--text); cursor: pointer; letter-spacing: 0; text-transform: none; margin-bottom: 0; }
+
+  .retrait-toggle-row { display: flex; gap: 6px; margin-bottom: 8px; }
+
+  .retrait-btn {
+    flex: 1; padding: 6px 10px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: transparent;
+    color: var(--muted); font-family: 'Instrument Sans', sans-serif;
+    font-size: 11px; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; text-align: center;
+  }
+
+  .retrait-btn.active { border-color: var(--accent); background: rgba(37,99,176,0.08); color: var(--accent); }
+  :root.dark .retrait-btn.active { background: rgba(37,99,176,0.1); }
+  .retrait-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+  .mode-toggle-row { display: flex; gap: 8px; margin-bottom: 16px; }
+
+  .mode-btn {
+    flex: 1; padding: 8px 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: transparent;
+    color: var(--muted); font-family: 'Instrument Sans', sans-serif;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; text-align: center; white-space: nowrap;
+  }
+
+  .mode-btn.active { border-color: var(--accent); background: rgba(37,99,176,0.08); color: var(--accent); }
+  :root.dark .mode-btn.active { background: rgba(37,99,176,0.1); }
+  .mode-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .btn-run {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    border: none; border-radius: 10px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 600; color: #fff;
+    cursor: pointer; letter-spacing: 0.04em;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative; overflow: hidden;
+  }
+
+  .btn-run::before { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0); transition: background 0.2s; }
+  .btn-run:hover::before { background: rgba(255,255,255,0.08); }
+  .btn-run:active { transform: scale(0.99); }
+  .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .results-area { display: flex; flex-direction: column; gap: 24px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+    transition: border-color 0.2s, background 0.3s, box-shadow 0.3s;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-card:hover { border-color: var(--subtle); }
+
+  .stat-label { font-size: 0.68rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.gold { color: var(--gold); }
+  .stat-value.blue { color: var(--accent); }
+  .stat-sub { font-size: 0.68rem; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+  .chart-panel { position: relative; }
+
+  canvas { display: block; width: 100% !important; }
+
+  .prob-bar-wrap { margin-top: 4px; }
+  .prob-bar-track { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .prob-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--red), var(--gold), var(--green)); transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  .dist-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .dist-row { grid-template-columns: 1fr; } }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 20px; border-top: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-line { width: 20px; height: 2px; flex-shrink: 0; border-radius: 1px; }
+
+  .placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px; text-align: center; gap: 12px; }
+  .placeholder-icon { font-size: 3rem; opacity: 0.2; }
+  .placeholder h3 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--muted); }
+  .placeholder p { font-size: 0.8rem; color: var(--subtle); max-width: 300px; line-height: 1.6; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+  .pct-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 0.78rem; }
+  .pct-table th { padding: 8px 12px; text-align: left; font-size: 0.68rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+  .pct-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .pct-table tr:last-child td { border-bottom: none; }
+  .pct-table td:last-child { text-align: right; }
+  .pct-badge { display: inline-block; width: 42px; height: 5px; border-radius: 2px; vertical-align: middle; margin-right: 8px; }
+
+  .mc-footer { margin-top: 64px; padding: 24px 0; border-top: 1px solid var(--border); text-align: center; }
+  .mc-footer p { font-size: 0.72rem; color: var(--subtle); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+
+  #tooltip-box {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 13px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.75rem; font-weight: 400; color: var(--text);
+    line-height: 1.55; width: 230px; white-space: normal;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+    pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 9999;
+  }
+
+  #tooltip-box.visible { opacity: 1; }
+
+  .tip {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; color: var(--muted); cursor: help;
+    position: relative; vertical-align: middle; margin-left: 3px;
+    font-style: normal; text-transform: none; letter-spacing: 0;
+  }
+  .tip:hover { color: var(--accent); }
+
+  .sc-tabs { display: flex; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+
+  .sc-tab {
+    padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    color: var(--muted); cursor: pointer; transition: all 0.15s; letter-spacing: 0.05em;
+  }
+
+  .sc-tab:hover { border-color: var(--sc-color, var(--accent)); color: var(--text); }
+  .sc-tab.active { background: var(--sc-color, var(--accent)); border-color: var(--sc-color, var(--accent)); color: #fff; font-weight: 500; }
+
+  .sc-table-wrap { display: none; }
+  .sc-table-wrap.active { display: block; overflow-x: auto; }
+
+  .sc-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 0.76rem; white-space: nowrap; }
+  .sc-table thead th { padding: 9px 14px; text-align: right; font-size: 0.65rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 2px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 1; }
+  .sc-table thead th:first-child { text-align: left; }
+  .sc-table td { padding: 7px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .sc-table tr:last-child td { border-bottom: none; }
+  .sc-table tr:hover td { background: var(--surface2); }
+  .sc-year { font-weight: 500; color: var(--muted); text-align: left; }
+  .sc-num { text-align: right; }
+  .sc-withdrawal { color: var(--orange) !important; }
+  .sc-end { font-weight: 500; }
+  .sc-row-ruined td { background: rgba(239,68,68,0.04); }
+
+  .fade-in { animation: fadeUp 0.4s ease forwards; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ===================== MC LINK BOX ===================== */
+  .mc-link-box {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s, background 0.25s;
+  }
+
+  .mc-link-box:has(#useMcData:checked) {
+    border-color: rgba(59,130,246,0.4);
+    background: color-mix(in srgb, var(--accent) 4%, transparent);
+  }
+
+  .mc-link-header {
+    padding: 0;
+  }
+
+  .mc-link-toggle {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 0;
+    padding: 12px 14px;
+    cursor: pointer;
+    margin-bottom: 0 !important;
+    font-size: 13px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--text);
+    width: 100%;
+  }
+
+  .mc-link-toggle input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-right: 10px;
+  }
+
+  .mc-link-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .mc-link-icon { font-size: 14px; }
+
+  .mc-link-body {
+    padding: 10px 14px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mc-link-no-data {
+    font-size: 11px;
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .mc-scenario-btns {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .mc-scen-btn {
+    flex: 1;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: "DM Mono", monospace;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .mc-scen-btn:hover { border-color: var(--accent); color: var(--text); }
+  .mc-scen-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); font-weight: 600; }
+
+  .mc-link-info {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: "DM Mono", monospace;
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border-left: 2px solid var(--accent);
+  }
+
+  /* Portfolio column in retraite table */
+  td.portfolio-val { color: #8b5cf6; }
+  :root.dark td.portfolio-val { color: #a78bfa; }
+
+  /* ===================== RETRAITE PAGE ===================== */
+  .ret-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    min-height: calc(100vh - var(--header-h));
+  }
+
+  @media (max-width: 1000px) { .ret-layout { grid-template-columns: 1fr; } }
+
+  .ret-sidebar {
+    border-right: 1px solid var(--border);
+    padding: 32px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    background: var(--surface);
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .section-title {
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .param-group {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 20px; position: relative;
+    border-radius: 8px;
+    transition: background 0.25s, border-color 0.25s;
+  }
+
+  .param-group::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; border-radius: 3px 0 0 3px; }
+  .param-group.pension::before { background: var(--pension); }
+  .param-group.rrq::before { background: var(--rrq); }
+  .param-group.psv::before { background: var(--psv); }
+  .param-group.general::before { background: var(--muted); }
+
+  .param-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; }
+  .param-label strong { font-weight: 500; }
+
+  .ret-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; margin-right: 8px; }
+  .param-group.pension .ret-dot { background: var(--pension); }
+  .param-group.rrq .ret-dot { background: var(--rrq); }
+  .param-group.psv .ret-dot { background: var(--psv); }
+
+  .ret-label { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text); }
+  .ret-label:last-child { margin-bottom: 0; }
+
+  .label-text { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .ret-sidebar input[type="number"],
+  .ret-sidebar select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    width: 100%;
+    outline: none;
+    border-radius: 6px;
+    transition: border-color 0.2s, background 0.25s, color 0.25s;
+    -moz-appearance: textfield;
+  }
+
+  .ret-sidebar input[type="number"]::-webkit-outer-spin-button,
+  .ret-sidebar input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .ret-sidebar input[type="number"]:focus,
+  .ret-sidebar select:focus { border-color: var(--accent); }
+  .ret-sidebar select option { background: var(--surface2); }
+
+  .input-with-unit { position: relative; }
+  .input-with-unit input { padding-right: 40px; }
+  .unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 11px; pointer-events: none; }
+
+  .ret-main {
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .ret-stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px; position: relative; overflow: hidden;
+    border-radius: 8px;
+    transition: background 0.25s, border-color 0.25s;
+  }
+
+  .ret-stat-card::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; }
+  .ret-stat-card.pension::after { background: var(--pension); }
+  .ret-stat-card.rrq::after { background: var(--rrq); }
+  .ret-stat-card.psv::after { background: var(--psv); }
+  .ret-stat-card.total::after { background: var(--total); }
+
+  .ret-stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .ret-stat-value { font-family: 'DM Serif Display', serif; font-size: 26px; font-weight: 400; }
+  .ret-stat-value.pension { color: var(--pension); }
+  .ret-stat-value.rrq { color: var(--rrq); }
+  .ret-stat-value.psv { color: var(--psv); }
+  .ret-stat-value.total { color: var(--total); }
+  .ret-stat-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px; position: relative; border-radius: 8px;
+    transition: background 0.25s, border-color 0.25s;
+  }
+
+  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .chart-title { font-family: 'DM Serif Display', serif; font-size: 18px; font-weight: 400; }
+
+  .view-toggle { display: flex; border: 1px solid var(--border); overflow: hidden; border-radius: 6px; }
+  .view-btn {
+    padding: 6px 14px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s;
+  }
+  .view-btn:not(:last-child) { border-right: 1px solid var(--border); }
+  .view-btn.active { background: var(--accent); color: var(--bg); }
+
+  .ret-canvas { width: 100% !important; max-height: 220px; }
+
+  .table-container { background: var(--surface); border: 1px solid var(--border); overflow-x: auto; border-radius: 8px; transition: background 0.25s, border-color 0.25s; }
+
+  .ret-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ret-table thead tr { background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .ret-table th { padding: 12px 16px; text-align: right; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); font-weight: 400; white-space: nowrap; }
+  .ret-table th:first-child { text-align: left; }
+  .ret-table th:first-child, .ret-table td:first-child { width: 1%; white-space: nowrap; }
+  .ret-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .ret-table tbody tr:hover { background: var(--surface2); }
+  .ret-table tbody tr:last-child { border-bottom: none; }
+  .ret-table td { padding: 10px 16px; text-align: right; white-space: nowrap; }
+  .ret-table td:first-child { text-align: left; color: var(--muted); }
+
+  .age-badge { display: inline-block; padding: 2px 8px; font-size: 11px; border-radius: 4px; }
+  .age-badge.start { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+
+  td.pension-val { color: var(--pension); }
+  td.rrq-val { color: var(--rrq); }
+  td.psv-val { color: var(--psv); }
+  td.total-val { color: var(--total); font-weight: 500; }
+
+  .ret-legend { display: flex; gap: 20px; flex-wrap: wrap; }
+  .ret-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+  .ret-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* Mode pension toggle in ret sidebar */
+  .ret-view-toggle { display: flex; border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; width: 100%; border-radius: 6px; }
+  .ret-view-btn {
+    flex: 1; padding: 6px 14px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s;
+  }
+  .ret-view-btn:not(:last-child) { border-right: 1px solid var(--border); }
+  .ret-view-btn.active { background: var(--accent); color: var(--bg); }
+
+  /* ===================== NAV UPDATE BADGE ===================== */
+  .nav-update-badge {
+    display: none;
+    margin-left: auto;
+    width: 8px;
+    height: 8px;
+    background: #22d3ee;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    animation: badgePop 0.3s cubic-bezier(.34,1.56,.64,1) forwards;
+    cursor: default;
+  }
+
+  .nav-update-badge.visible { display: inline-block; }
+
+  /* Tooltip on badge */
+  .nav-update-badge::after {
+    content: 'Planificateur mis à jour';
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 11px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 300;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+
+  .nav-update-badge:hover::after { opacity: 1; }
+
+  /* Also show tooltip when nav is collapsed (badge floats to the right of icon) */
+  .left-nav.collapsed .nav-update-badge {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    margin-left: 0;
+  }
+
+  @keyframes badgePop {
+    from { opacity: 0; transform: scale(0.4); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* ===================== RESPONSIVE ===================== */
+  @media (max-width: 768px) {
+    :root { --nav-w: 0px; --nav-collapsed-w: 0px; }
+    .left-nav { display: none; }
+    .page-content { margin-left: 0 !important; }
+  }
+</style>
 </head>
 <body>
 
-<button class="theme-toggle" onclick="toggleTheme()" title="Changer le thème">
-  <span class="toggle-icon" id="toggle-icon">☀️</span>
-  <div class="toggle-track"><div class="toggle-thumb"></div></div>
-  <span id="toggle-label">Clair</span>
-</button>
+<div id="tooltip-box"></div>
 
+<!-- ===================== HEADER ===================== -->
 <header>
-  <div class="eyebrow">Outil financier</div>
+  <div class="header-icon-wrap">📈</div>
   <div class="header-divider"></div>
-  <h1>Simulation de <em>Rendement</em> avec Retraits Annuels</h1>
+  <h1>Outils de <em>planification de retraite</em></h1>
   <div class="header-divider"></div>
-  <p>Projetez l'évolution de votre placement année par année</p>
+  <p class="header-disclaimer">À titre informatif seulement — ne constitue pas un conseil financier</p>
+  <div class="header-spacer"></div>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Changer le thème">
+    <span class="toggle-icon" id="toggle-icon">🌙</span>
+    <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    <span id="toggle-label">Sombre</span>
+  </button>
 </header>
 
-<div class="wrapper">
+<!-- ===================== APP SHELL ===================== -->
+<div class="app-shell">
 
-  <div class="layout">
+  <!-- LEFT NAV -->
+  <nav class="left-nav" id="leftNav">
+    <button class="nav-toggle-btn" onclick="toggleNav()" title="Réduire/agrandir le menu">
+      <span class="nav-toggle-icon">◀</span>
+      <span class="nav-toggle-label">Réduire</span>
+    </button>
 
-    <!-- COLONNE GAUCHE : Paramètres -->
-    <div class="col-left">
+    <div class="nav-section-title">Navigation</div>
 
-      <div class="card">
-        <div class="card-title">Paramètres</div>
+    <button class="nav-item active" id="nav-monte" onclick="showPage('monte')" data-tooltip="Simulateur">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">
+        Simulateur
+        <small>Rendement &amp; Retrait</small>
+      </span>
+    </button>
 
-        <!-- Sélecteur de mode -->
-        <div class="mode-toggle-row">
-          <button class="mode-btn active" id="btn-fixe" onclick="setMode('fixe')">📊 Taux fixe</button>
-          <button class="mode-btn" id="btn-variable" onclick="setMode('variable')">📈 Variable</button>
-          <button class="mode-btn" id="btn-monte" onclick="setMode('monte')">🎲 Monte Carlo</button>
+    <div class="nav-divider"></div>
+
+    <button class="nav-item" id="nav-retraite" onclick="showPage('retraite')" data-tooltip="Planificateur">
+      <span class="nav-icon">🏖️</span>
+      <span class="nav-label">
+        Planificateur
+        <small>Retraite & rentes</small>
+      </span>
+    </button>
+  </nav>
+
+  <!-- PAGE CONTENT -->
+  <div class="page-content">
+
+    <!-- ==================== PAGE MONTE CARLO ==================== -->
+    <div class="page active" id="page-monte">
+      <div class="mc-container">
+        <div class="mc-layout">
+
+          <!-- LEFT: Controls -->
+          <aside>
+            <div class="panel params-panel">
+              <div class="params-label">⚙️ Paramètres</div>
+              <div class="panel-body">
+
+                <div class="mode-toggle-row">
+                  <button class="mode-btn active" id="btn-historique" onclick="setSimMode('historique')">🎲 Monte Carlo</button>
+                  <button class="mode-btn" id="btn-fixe" onclick="setSimMode('fixe')">📈 Taux fixe</button>
+                </div>
+
+                <div class="field">
+                  <label>Valeur initiale du portefeuille <span class="tip" data-tip="Montant total de votre portefeuille au début de la simulation.">ⓘ</span></label>
+                  <div class="input-wrap has-prefix">
+                    <span class="input-prefix">$</span>
+                    <input type="number" id="portfolioValue" value="450000" min="0" step="1000">
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Retrait annuel <span class="tip" data-tip="Montant ou pourcentage retiré chaque année. En mode %, le retrait est recalculé chaque année selon la valeur du portefeuille.">ⓘ</span></label>
+                  <div class="retrait-toggle-row">
+                    <button class="retrait-btn active" id="btn-retrait-montant" onclick="setRetraitMode('montant')">$ Montant</button>
+                    <button class="retrait-btn" id="btn-retrait-pct" onclick="setRetraitMode('pct')">% Taux</button>
+                  </div>
+                  <div id="retrait-montant-field">
+                    <div class="input-wrap has-prefix">
+                      <span class="input-prefix">$</span>
+                      <input type="number" id="annualWithdrawal" value="20000" min="0" step="500">
+                    </div>
+                  </div>
+                  <div id="retrait-pct-field" style="display:none">
+                    <div class="input-wrap has-suffix">
+                      <input type="number" id="withdrawalPct" value="4" min="0" max="100" step="0.1">
+                      <span class="input-suffix">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="inflation-box" id="inflationBox">
+                  <div class="inflation-inner" id="inflationRow">
+                    <label class="checkbox-field" for="inflationCheck" style="border:none;padding:0;margin:0;background:transparent;display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                      <input type="checkbox" id="inflationCheck" checked>
+                      <span class="cb-label">Taux d'inflation <span class="tip" data-tip="Si activé, le montant du retrait augmente chaque année selon le taux d'inflation choisi, pour maintenir le même pouvoir d'achat.">ⓘ</span></span>
+                    </label>
+                    <div class="input-wrap has-suffix" style="max-width:110px;">
+                      <input type="number" id="inflationRate" value="2" min="0" max="20" step="0.1">
+                      <span class="input-suffix">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Horizon de projection <span class="tip" data-tip="Nombre d'années sur lesquelles la simulation est effectuée. Correspond généralement à la durée estimée de votre retraite.">ⓘ</span></label>
+                  <div class="input-wrap has-suffix">
+                    <input type="number" id="years" value="40" min="5" max="60" step="1">
+                    <span class="input-suffix">ans</span>
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div id="opts-historique">
+                  <div class="field">
+                    <label>Indice <span class="tip" data-tip="Données annuelles réelles ajustées pour dividendes. S&P 500 depuis 1928, TSX depuis 1956, Portefeuilles 60/40 et 80/20 depuis 1928.">ⓘ</span></label>
+                    <select id="histIndex">
+                      <option value="p6040" selected>Portefeuille 60/40 (1928–2024)</option>
+                      <option value="p8020">Portefeuille 80/20 (1928–2024)</option>
+                      <option value="sp500">S&amp;P 500 (1928–2024)</option>
+                      <option value="tsx">TSX (1956–2024)</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Méthode <span class="tip" data-tip="Bootstrap : chaque année est tirée indépendamment au hasard. Séquences : blocs de 5 ans consécutifs pour préserver les cycles économiques.">ⓘ</span></label>
+                    <select id="histMethod">
+                      <option value="bootstrap">Bootstrap — années indépendantes</option>
+                      <option value="block">Séquences consécutives (blocs 5 ans)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="opts-fixe" style="display:none">
+                  <div class="field">
+                    <label>Taux de rendement annuel <span class="tip" data-tip="Rendement annuel fixe appliqué à chaque année de la simulation.">ⓘ</span></label>
+                    <div class="input-wrap has-suffix">
+                      <input type="number" id="fixedRate" value="5" min="-20" max="50" step="0.1">
+                      <span class="input-suffix">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="numSimsField">
+                  <div class="field">
+                    <label>Nombre de simulations <span class="tip" data-tip="Nombre de trajectoires aléatoires générées. Plus ce nombre est élevé, plus les résultats sont précis.">ⓘ</span></label>
+                    <input type="number" id="numSims" value="1000" min="100" max="10000" step="100">
+                  </div>
+                </div>
+
+                <button class="btn-run" id="runBtn" onclick="runSimulation()">
+                  Lancer la simulation
+                </button>
+
+              </div>
+            </div>
+          </aside>
+
+          <!-- RIGHT: Results -->
+          <main>
+            <div class="results-area" id="resultsArea">
+              <div class="panel" id="placeholder">
+                <div class="placeholder">
+                  <div class="placeholder-icon">📊</div>
+                  <h3>Prêt à simuler</h3>
+                  <p>Configurez vos paramètres et lancez la simulation pour voir les projections de votre portefeuille.</p>
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
 
-        <div class="form-grid">
+        <div class="mc-footer">
+          <p>À titre informatif seulement — Les simulations sont basées sur des rendements historiques réels et ne constituent pas des conseils financiers.</p>
+        </div>
+      </div>
+    </div><!-- /page-monte -->
 
-          <div class="field" style="grid-column:1/-1">
-            <label>Valeur initiale</label>
-            <div class="input-wrap">
-              <span class="prefix">$</span>
-              <input type="number" id="valeur" placeholder="100 000" min="1" />
-            </div>
-            <div class="err-msg" id="err-valeur"></div>
-          </div>
+    <!-- ==================== PAGE RETRAITE ==================== -->
+    <div class="page" id="page-retraite">
+      <div class="ret-layout">
 
-          <div class="field" id="field-taux">
-            <label>Taux de rendement</label>
-            <div class="input-wrap">
-              <span class="prefix">%</span>
-              <input type="number" id="taux" placeholder="5.00" min="0" step="0.01" />
-            </div>
-            <div class="err-msg" id="err-taux"></div>
-          </div>
+        <!-- SIDEBAR PARAMS -->
+        <div class="ret-sidebar">
 
-          <div class="field">
-            <label>Retrait annuel</label>
-            <div class="retrait-mode-toggle">
-              <button class="retrait-btn active" id="btn-retrait-montant" onclick="setRetraitMode('montant')">$ Montant</button>
-              <button class="retrait-btn" id="btn-retrait-pct" onclick="setRetraitMode('pct')">% Taux</button>
-            </div>
-            <div id="retrait-montant-wrap" class="input-wrap">
-              <span class="prefix">$</span>
-              <input type="number" id="retrait" placeholder="20 000" min="0" />
-            </div>
-            <div id="retrait-pct-wrap" class="input-wrap hidden">
-              <span class="prefix">%</span>
-              <input type="number" id="retrait-pct" placeholder="4.0" value="4" min="0" max="100" step="0.1" />
-            </div>
-            <div class="err-msg" id="err-retrait"></div>
-          </div>
-
-          <div class="field" style="grid-column:1/-1">
-            <div class="inflation-toggle">
-              <label class="checkbox-label">
-                <input type="checkbox" id="inflation-on" onchange="toggleInflation()" />
-                <span>Ajuster à l'inflation</span>
+          <div>
+            <div class="section-title">Profil</div>
+            <div class="param-group general">
+              <label class="ret-label">
+                <span class="label-text">Année de naissance</span>
+                <input type="number" id="birthYear" value="1971" min="1940" max="2000">
               </label>
-              <div class="inflation-field" id="inflation-field">
-                <div class="input-wrap" style="width:70px; opacity:0.4;">
-                  <span class="prefix">%</span>
-                  <input type="number" id="inflation" value="2" min="0" max="20" step="0.1" placeholder="2.0" disabled />
+              <label class="ret-label">
+                <span class="label-text">Âge de début de la retraite</span>
+                <input type="number" id="retirementAge" value="55" min="45" max="75">
+              </label>
+              <label class="ret-label">
+                <span class="label-text">Âge de simulation (fin)</span>
+                <input type="number" id="endAge" value="90" min="60" max="100">
+              </label>
+            </div>
+
+            <!-- MC INTEGRATION -->
+            <div class="mc-link-box" id="mcLinkBox">
+              <div class="mc-link-header">
+                <label class="mc-link-toggle" for="useMcData">
+                  <input type="checkbox" id="useMcData" onchange="onMcLinkChange()">
+                  <span class="mc-link-label">
+                    <span class="mc-link-icon">&#128279;</span>
+                    Utiliser les retraits du Simulateur
+                  </span>
+                </label>
+              </div>
+              <div class="mc-link-body" id="mcLinkBody" style="display:none;">
+                <div class="mc-link-no-data" id="mcLinkNoData">
+                  &#9888;&#65039; Lancez d'abord une simulation dans le Simulateur
+                </div>
+                <div id="mcLinkControls" style="display:none;">
+                  <span class="label-text" style="display:block;margin-bottom:6px;">Scénario à utiliser</span>
+                  <div class="mc-scenario-btns">
+                    <button class="mc-scen-btn" id="mcScenWorst" onclick="setMcScenario('worst')">😟 Pire</button>
+                    <button class="mc-scen-btn" onclick="setMcScenario('p10')">P10</button>
+                    <button class="mc-scen-btn active" onclick="setMcScenario('p50')">P50</button>
+                    <button class="mc-scen-btn" onclick="setMcScenario('p90')">P90</button>
+                    <button class="mc-scen-btn" id="mcScenFixed" onclick="setMcScenario('fixed')" style="display:none;">Taux fixe</button>
+                  </div>
+                  <div style="margin-top:10px;">
+                    <span class="label-text" style="display:block;margin-bottom:6px;">Âge de début des retraits</span>
+                    <div class="input-with-unit" style="max-width:120px;">
+                      <input type="number" id="mcWithdrawalStartAge" value="55" min="45" max="85" step="1" onchange="retRender()" oninput="retRender()">
+                      <span class="unit">ans</span>
+                    </div>
+                  </div>
+                  <div class="mc-link-info" id="mcLinkInfo"></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="field">
-            <label>Âge de retraite</label>
-            <div class="input-wrap">
-              <input type="number" id="annee" class="no-prefix" placeholder="55" min="1" max="120" />
+          <!-- FOND DE PENSION -->
+          <div>
+            <div class="section-title">Fond de pension</div>
+            <div class="param-group pension">
+              <div class="param-label" style="margin-bottom:14px;">
+                <span><span class="ret-dot"></span>Fond de pension</span>
+              </div>
+              <div class="ret-view-toggle">
+                <button class="ret-view-btn active" id="btnRREGOP" onclick="setPensionMode('rregop')">RREGOP</button>
+                <button class="ret-view-btn" id="btnPension" onclick="setPensionMode('pension')">Pension</button>
+              </div>
+
+              <div id="fieldsRREGOP">
+                <label class="ret-label">
+                  <span class="label-text">Âge de retraite (fin d'emploi, min. 55 ans)</span>
+                  <select id="pensionAge">
+                    <option value="55" selected>55 ans</option><option value="56">56 ans</option><option value="57">57 ans</option>
+                    <option value="58">58 ans</option><option value="59">59 ans</option><option value="60">60 ans</option>
+                    <option value="61">61 ans</option><option value="62">62 ans</option><option value="63">63 ans</option>
+                    <option value="64">64 ans</option><option value="65">65 ans</option>
+                  </select>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">Âge de début de la rente RREGOP</span>
+                  <select id="rregopRenteAge">
+                    <option value="55" selected>55 ans</option><option value="56">56 ans</option><option value="57">57 ans</option>
+                    <option value="58">58 ans</option><option value="59">59 ans</option><option value="60">60 ans</option>
+                    <option value="61">61 ans (sans pénalité)</option><option value="62">62 ans</option><option value="63">63 ans</option>
+                    <option value="64">64 ans</option><option value="65">65 ans</option>
+                  </select>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">Salaire moyen 5 meilleures années (SMF5)</span>
+                  <div class="input-with-unit">
+                    <input type="number" id="rregopSalaire" value="117000" min="0" step="1000">
+                    <span class="unit">$/an</span>
+                  </div>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">Années de service pour le calcul (max 40)</span>
+                  <div class="input-with-unit">
+                    <input type="number" id="rregopAnnees" value="13" min="1" max="40" step="1">
+                    <span class="unit">ans</span>
+                  </div>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">MGA moyen (5 dernières années)</span>
+                  <div class="input-with-unit">
+                    <input type="number" id="rregopMGA" value="71300" min="0" step="500">
+                    <span class="unit">$/an</span>
+                  </div>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">Indexation annuelle (TAIR)</span>
+                  <div class="input-with-unit">
+                    <input type="number" id="pensionIndex" value="2.0" min="0" max="10" step="0.1">
+                    <span class="unit">%</span>
+                  </div>
+                </label>
+                <div id="rregopInfo" style="margin-top:12px; padding:10px; background:color-mix(in srgb, var(--pension) 10%, transparent); border-left: 2px solid var(--pension); font-size:11px; line-height:1.7; color:var(--text);"></div>
+              </div>
+
+              <div id="fieldsPension" style="display:none;">
+                <label class="ret-label">
+                  <span class="label-text">Âge de début</span>
+                  <select id="pensionSimpleAge">
+                    <option value="50">50 ans</option><option value="51">51 ans</option><option value="52">52 ans</option>
+                    <option value="53">53 ans</option><option value="54">54 ans</option><option value="55" selected>55 ans</option>
+                    <option value="56">56 ans</option><option value="57">57 ans</option><option value="58">58 ans</option>
+                    <option value="59">59 ans</option><option value="60">60 ans</option><option value="61">61 ans</option>
+                    <option value="62">62 ans</option><option value="63">63 ans</option><option value="64">64 ans</option>
+                    <option value="65">65 ans</option>
+                  </select>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">Montant annuel</span>
+                  <div class="input-with-unit">
+                    <input type="number" id="pensionSimpleAmount" value="22000" min="0" step="500">
+                    <span class="unit">$/an</span>
+                  </div>
+                </label>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                  <span class="label-text" style="flex:1;">Indexation</span>
+                  <label style="flex-direction:row; align-items:center; gap:6px; margin-bottom:0; cursor:pointer; text-transform:none; font-size:12px; font-weight:400; letter-spacing:0;">
+                    <input type="checkbox" id="pensionSimpleIndexed" checked style="width:auto; accent-color:var(--accent);">
+                    <span>Oui</span>
+                  </label>
+                </div>
+                <label class="ret-label" id="pensionSimpleIndexLabel">
+                  <span class="label-text">Taux d'indexation</span>
+                  <div class="input-with-unit">
+                    <input type="number" id="pensionSimpleIndexRate" value="2.0" min="0" max="10" step="0.1">
+                    <span class="unit">%</span>
+                  </div>
+                </label>
+              </div>
             </div>
-            <div class="err-msg" id="err-annee"></div>
           </div>
 
-          <div class="field">
-            <label>Nb d'années <span style="font-size:10px;color:var(--muted)">(0=épuis.)</span></label>
-            <div class="input-wrap">
-              <input type="number" id="nb" class="no-prefix" placeholder="20" min="0" max="200" />
-            </div>
-            <div class="err-msg" id="err-nb"></div>
-          </div>
-
-        </div>
-
-        <!-- Options du mode variable -->
-        <div class="var-options hidden" id="var-options">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Options de simulation</div>
-          <div class="var-options-grid">
-            <div class="field">
-              <label>Moy. cible</label>
-              <div class="input-wrap">
-                <span class="prefix">%</span>
-                <input type="number" id="var-moy" value="6" min="-20" max="20" step="0.5" />
-              </div>
-            </div>
-            <div class="field">
-              <label>Oscillation</label>
-              <div class="input-wrap">
-                <span class="prefix">±%</span>
-                <input type="number" id="var-amp" value="20" min="1" max="40" step="1" />
-              </div>
-            </div>
-            <div class="field">
-              <label>Simulations</label>
-              <div class="input-wrap">
-                <input type="number" id="var-nsim" class="no-prefix" value="5" min="1" max="10" oninput="if(this.value>10)this.value=10;if(this.value<1&&this.value!='')this.value=1;" />
-              </div>
-            </div>
-          </div>
-          <div style="font-size:10px;color:var(--muted);font-style:italic;">Les courbes apparaîtront dans la légende du graphique.</div>
-        </div>
-
-        <!-- Options du mode Monte Carlo -->
-        <div class="var-options hidden" id="monte-options">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Options Monte Carlo</div>
-          <div class="var-options-grid">
-            <div class="field">
-              <label>Moy. cible</label>
-              <div class="input-wrap">
-                <span class="prefix">%</span>
-                <input type="number" id="mc-moy" value="6" min="-20" max="20" step="0.5" />
-              </div>
-            </div>
-            <div class="field">
-              <label>Oscillation</label>
-              <div class="input-wrap">
-                <span class="prefix">±%</span>
-                <input type="number" id="mc-amp" value="20" min="1" max="40" step="1" />
-              </div>
-            </div>
-            <div class="field">
-              <label>Simulations</label>
-              <div class="input-wrap">
-                <input type="number" id="mc-nsim" class="no-prefix" value="1000" min="1" max="10000" step="100" oninput="if(this.value>10000)this.value=10000;" />
+          <!-- RRQ -->
+          <div>
+            <div class="section-title">RRQ — Rente du Québec</div>
+            <div class="param-group rrq">
+              <div class="param-label"><span><span class="ret-dot"></span>RRQ</span></div>
+              <label class="ret-label">
+                <span class="label-text">Âge de début</span>
+                <select id="rrqAge">
+                  <option value="60" selected>60 ans (réduit)</option><option value="61">61 ans</option>
+                  <option value="62">62 ans</option><option value="63">63 ans</option><option value="64">64 ans</option>
+                  <option value="65">65 ans (standard)</option><option value="66">66 ans</option>
+                  <option value="67">67 ans</option><option value="68">68 ans</option><option value="69">69 ans</option>
+                  <option value="70">70 ans (maximum)</option>
+                </select>
+              </label>
+              <label class="ret-label">
+                <span class="label-text">Montant annuel à 65 ans</span>
+                <div class="input-with-unit">
+                  <input type="number" id="rrqAmount" value="15444" min="0" step="100">
+                  <span class="unit">$/an</span>
+                </div>
+              </label>
+              <label class="ret-label">
+                <span class="label-text">Indexation annuelle (IPC)</span>
+                <div class="input-with-unit">
+                  <input type="number" id="rrqIndex" value="2.0" min="0" max="10" step="0.1">
+                  <span class="unit">%</span>
+                </div>
+              </label>
+              <div class="label-text" style="color: var(--muted); margin-top: 4px; line-height: 1.6;">
+                Note: −0.5%/mois avant 65 ans · +0.7%/mois après 65 ans
               </div>
             </div>
           </div>
-          <div style="font-size:10px;color:var(--muted);font-style:italic;">Affiche les percentiles P10 / P25 / P50 / P75 / P90.</div>
-        </div>
 
-        <div class="btn-row">
-          <button class="calc" onclick="calculer()">Calculer</button>
-        </div>
+          <!-- PSV -->
+          <div>
+            <div class="section-title">PSV — Pension de Sécurité de Vieillesse</div>
+            <div class="param-group psv">
+              <div class="param-label"><span><span class="ret-dot"></span>PSV</span></div>
+              <label class="ret-label">
+                <span class="label-text">Âge de début</span>
+                <select id="psvAge">
+                  <option value="65" selected>65 ans (standard)</option>
+                  <option value="66">66 ans (+7.2%)</option><option value="67">67 ans (+14.4%)</option>
+                  <option value="68">68 ans (+21.6%)</option><option value="69">69 ans (+28.8%)</option>
+                  <option value="70">70 ans (+36% max)</option>
+                </select>
+              </label>
+              <label class="ret-label">
+                <span class="label-text">Montant annuel à 65 ans (2024)</span>
+                <div class="input-with-unit">
+                  <input type="number" id="psvAmount" value="8800" min="0" step="100">
+                  <span class="unit">$/an</span>
+                </div>
+              </label>
+              <label class="ret-label">
+                <span class="label-text">Indexation annuelle (IPC)</span>
+                <div class="input-with-unit">
+                  <input type="number" id="psvIndex" value="2.0" min="0" max="10" step="0.1">
+                  <span class="unit">%</span>
+                </div>
+              </label>
+              <div class="label-text" style="color: var(--muted); margin-top: 4px; line-height: 1.6;">
+                Note: +0.6%/mois de report après 65 ans
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /ret-sidebar -->
+
+        <!-- MAIN CONTENT -->
+        <div class="ret-main">
+
+          <!-- CHART -->
+          <div class="chart-container">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Revenus de retraite par année</div>
+                <div class="ret-legend" id="legend" style="margin-top: 8px;"></div>
+              </div>
+              <div class="view-toggle">
+                <button class="view-btn active" id="btnAnnuel" onclick="setAmountMode('annuel')">Annuel</button>
+                <button class="view-btn" id="btnMensuel" onclick="setAmountMode('mensuel')">Mensuel</button>
+              </div>
+            </div>
+            <div style="position:relative; height:220px;">
+              <canvas id="chart" class="ret-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- TABLE -->
+          <div class="table-container">
+            <table id="dataTable" class="ret-table">
+              <thead>
+                <tr>
+                  <th>Âge</th>
+                  <th>Année</th>
+                  <th id="thPension">RREGOP</th>
+                  <th>RRQ</th>
+                  <th>PSV</th>
+                  <th id="thPortfolio" style="display:none;">Portefeuille</th>
+                  <th id="thTotal">Total annuel</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+
+        </div><!-- /ret-main -->
       </div>
+    </div><!-- /page-retraite -->
 
-    </div><!-- /col-left -->
+  </div><!-- /page-content -->
+</div><!-- /app-shell -->
 
-    <!-- COLONNE DROITE : Résultats -->
-    <div class="col-right">
-
-      <div id="results" class="hidden">
-
-        <div class="notice" id="notice">
-          <span class="icon">ℹ</span>
-          <span id="notice-text"></span>
-        </div>
-
-        <div class="notice notice-warn hidden" id="notice-warn">
-          <span class="icon">⚠️</span>
-          <span id="notice-warn-text"></span>
-        </div>
-
-        <div class="chart-card hidden" id="mc-stats-card">
-          <div class="card-title">Statistiques Monte Carlo</div>
-          <div class="mc-stats-grid" id="mc-stats-grid"></div>
-        </div>
-
-        <div class="chart-card">
-          <div class="card-title">Évolution graphique</div>
-          <div class="chart-wrap">
-            <canvas id="chart"></canvas>
-          </div>
-          <div class="chart-legend" id="chart-legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#2563b0"></div>Valeur du placement</div>
-          </div>
-          <div id="sim-badges-wrap" class="hidden" style="margin-top:12px;">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;">Afficher / masquer</div>
-            <div class="sim-badges" id="sim-badges"></div>
-          </div>
-        </div>
-
-        <div class="tabs-card" id="table-card">
-          <div id="table-label" class="hidden" style="font-size:11px;color:var(--muted);font-style:italic;padding:10px 20px 0;font-family:'DM Mono',monospace;">5 simulations choisies au hasard parmi les simulations générées</div>
-          <div class="tabs-header" id="tabs-header"></div>
-          <div id="tabs-content"></div>
-        </div>
-
-      </div>
-
-    </div><!-- /col-right -->
-
-  </div><!-- /layout -->
-
-</div>
-
+<!-- ===================== SCRIPTS ===================== -->
 <script>
-  const fmt    = n => '$\u202f' + n.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const fmtPct = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '\u202f%';
+// ===================== PLANIFICATEUR UPDATE BADGE =====================
+function showPlanificateurUpdatedBadge() {
+  // Show a small badge on the Planificateur nav item to signal it was updated
+  const navBtn = document.getElementById('nav-retraite');
+  if (!navBtn) return;
+  let badge = navBtn.querySelector('.nav-update-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'nav-update-badge';
+    navBtn.appendChild(badge);
+  }
+  badge.textContent = '';
+  badge.classList.add('visible');
+  // Remove badge when user visits the planificateur page
+  navBtn.addEventListener('click', () => badge.classList.remove('visible'), { once: true });
+}
 
-  let currentMode = 'fixe';
-  let retraitMode = 'montant';
-  let allSimulations = []; // [{rates[], rows[]}]
-  let visibleSims = new Set();
+// ===================== NAVIGATION =====================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
 
-  const SIM_COLORS = ['#e07b3a','#4c8fc9','#7c5cbf','#3dba7e','#e05c6a','#48b8b8','#c95cb5','#9ab83d','#4c8fc9','#8888cc'];
+function toggleNav() {
+  const nav = document.getElementById('leftNav');
+  const content = document.querySelector('.page-content');
+  const btn = nav.querySelector('.nav-toggle-btn .nav-toggle-label');
+  const collapsed = nav.classList.toggle('collapsed');
+  content.classList.toggle('nav-collapsed', collapsed);
+  document.body.classList.toggle('nav-collapsed', collapsed);
+  btn.textContent = collapsed ? 'Agrandir' : 'Réduire';
+}
 
-  function toggleInflation() {
-    const on = document.getElementById('inflation-on').checked;
-    const input = document.getElementById('inflation');
-    const wrap = input.closest('.input-wrap');
-    input.disabled = !on;
-    wrap.style.opacity = on ? '1' : '0.4';
+// ===================== THEME =====================
+let isDark = false;
+
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.classList.toggle('dark', isDark);
+  document.getElementById('toggle-icon').textContent = isDark ? '☀️' : '🌙';
+  document.getElementById('toggle-label').textContent = isDark ? 'Clair' : 'Sombre';
+  if (window._lastSimData) renderResults(window._lastSimData);
+  if (window._retChartInstance) retRender();
+}
+
+function getThemeColors() {
+  return isDark
+    ? { tooltip: '#111827', tooltipBorder: '#1e2d45', tooltipTitle: '#94a3b8', tooltipBody: '#e2e8f0', grid: 'rgba(30,45,69,0.6)', tick: '#475569' }
+    : { tooltip: '#ffffff', tooltipBorder: '#d1dce8', tooltipTitle: '#64748b', tooltipBody: '#0f172a', grid: 'rgba(209,220,232,0.8)', tick: '#94a3b8' };
+}
+
+// ===================== TOOLTIPS (Simulateur) =====================
+const tipBox = document.getElementById('tooltip-box');
+const PAD = 10;
+
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('.tip');
+  if (!el) return;
+  tipBox.textContent = el.dataset.tip;
+  tipBox.classList.add('visible');
+  positionTip(e);
+});
+
+document.addEventListener('mousemove', e => {
+  if (!tipBox.classList.contains('visible')) return;
+  positionTip(e);
+});
+
+document.addEventListener('mouseout', e => {
+  if (e.target.closest('.tip')) tipBox.classList.remove('visible');
+});
+
+function positionTip(e) {
+  const W = window.innerWidth, H = window.innerHeight;
+  const bw = 230, bh = tipBox.offsetHeight || 80;
+  let x = e.clientX + 14;
+  let y = e.clientY - bh - 10;
+  if (x + bw + PAD > W) x = e.clientX - bw - 14;
+  if (x < PAD) x = PAD;
+  if (y < PAD) y = e.clientY + 20;
+  if (y + bh + PAD > H) y = H - bh - PAD;
+  tipBox.style.left = x + 'px';
+  tipBox.style.top  = y + 'px';
+}
+
+document.getElementById('inflationCheck').addEventListener('change', function() {
+  document.getElementById('inflationRate').disabled = !this.checked;
+  document.getElementById('inflationRate').style.opacity = this.checked ? '1' : '0.4';
+});
+
+// ===================== MONTE CARLO LOGIC =====================
+let chartMain = null;
+let chartDist = null;
+
+function mcFmt(val, decimals = 0) {
+  if (Math.abs(val) >= 1e9) return (val / 1e9).toFixed(1) + ' G$';
+  if (Math.abs(val) >= 1e6) return (val / 1e6).toFixed(2) + ' M$';
+  return val.toLocaleString('fr-CA', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' $';
+}
+
+function fmtPct(val) { return val.toFixed(1) + ' %'; }
+
+function percentile(arr, p) {
+  const sorted = [...arr].sort((a, b) => a - b);
+  const idx = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+function runSimulation() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Calcul en cours…';
+  setTimeout(() => {
+    try { simulate(); } finally {
+      btn.disabled = false;
+      btn.textContent = 'Lancer la simulation';
+    }
+  }, 50);
+}
+
+const HIST_SP500 = [43.81,-8.30,-25.12,-43.84,-8.64,49.98,-1.19,46.74,31.94,-35.34,31.12,-0.41,-10.67,-12.77,19.17,25.06,19.03,35.82,-1.10,52.56,31.56,6.56,-0.96,52.62,32.60,7.44,-10.78,43.72,11.96,0.34,26.89,-8.73,22.80,16.48,12.45,-10.06,23.98,11.06,-8.50,3.99,14.31,20.09,-11.81,-22.10,28.68,10.88,4.91,15.79,5.62,-37.00,26.46,15.06,2.11,16.00,32.39,13.69,1.38,11.96,21.83,-4.38,31.49,18.40,28.72,26.67,19.53,-10.14,-13.04,-23.37,26.38,8.99,3.00,13.62,3.53,-38.49,23.45,12.78,0.00,13.41,29.60,11.39,-0.73,9.54,19.42,-6.24,28.88,16.26,31.33,18.40,28.71,-19.44,26.29,20.00,24.23,7.67].map(v => v/100);
+const HIST_TSX = [13.30,24.30,32.50,-3.20,27.80,-7.10,-5.40,19.80,20.10,3.10,14.30,-15.20,8.50,29.70,11.60,11.10,28.40,-2.70,7.60,14.00,-0.50,26.00,44.00,-11.30,3.40,11.70,-0.10,2.20,-21.90,-12.40,-14.00,26.70,14.50,24.10,17.30,-8.70,17.30,9.80,28.00,35.10,17.30,-33.00,35.10,17.60,14.45,-8.71,9.73,12.99,-7.09,-11.11,19.13,21.08,9.10,15.25,7.19,-8.89,16.26,5.64,11.09,-17.83,21.68,15.18,6.68,8.74,13.52].map(v => v/100);
+const HIST_BONDS = [0.84,4.20,4.54,-2.56,8.79,1.86,7.96,4.47,5.33,6.04,4.72,3.59,3.59,0.57,2.48,3.80,3.35,2.02,2.26,4.68,1.46,3.55,2.66,1.08,-1.10,7.46,3.29,3.82,3.15,1.22,7.56,2.91,-2.65,11.54,3.66,2.10,2.49,0.81,2.74,-0.56,-0.15,1.06,8.05,32.81,13.73,25.71,24.28,-4.96,8.22,17.69,6.24,18.11,19.30,8.40,14.21,-8.25,23.48,1.43,9.94,14.92,-8.25,16.66,5.57,15.12,0.38,5.53,15.79,2.97,2.10,9.64,10.17,2.97,0.09,25.86,-11.17,20.26,8.49,2.90,7.84,-1.44,5.39,7.68,12.65,0.07,10.68,-9.09,-25.09,3.51,16.18,4.27].map(v => v/100);
+const HIST_P6040 = HIST_SP500.map((r, i) => 0.6*r + 0.4*(HIST_BONDS[i] !== undefined ? HIST_BONDS[i] : 0.03));
+const HIST_P8020 = HIST_SP500.map((r, i) => 0.8*r + 0.2*(HIST_BONDS[i] !== undefined ? HIST_BONDS[i] : 0.03));
+const HIST_DATA = { sp500: HIST_SP500, tsx: HIST_TSX, p6040: HIST_P6040, p8020: HIST_P8020 };
+
+function getHistReturns() { return HIST_DATA[document.getElementById('histIndex').value]; }
+
+function sampleHistReturn(returns, method, blockState) {
+  if (method === 'bootstrap') return returns[Math.floor(Math.random() * returns.length)];
+  if (blockState.remaining === 0) { blockState.start = Math.floor(Math.random()*(returns.length-5)); blockState.pos = 0; blockState.remaining = 5; }
+  const r = returns[blockState.start + blockState.pos];
+  blockState.pos++; blockState.remaining--;
+  return r;
+}
+
+let retraitMode = 'montant';
+
+function setRetraitMode(mode) {
+  retraitMode = mode;
+  document.getElementById('btn-retrait-montant').classList.toggle('active', mode === 'montant');
+  document.getElementById('btn-retrait-pct').classList.toggle('active', mode === 'pct');
+  document.getElementById('retrait-montant-field').style.display = mode === 'montant' ? 'block' : 'none';
+  document.getElementById('retrait-pct-field').style.display = mode === 'pct' ? 'block' : 'none';
+  document.getElementById('inflationBox').style.display = mode === 'pct' ? 'none' : 'block';
+}
+
+let simMode = 'historique';
+
+function setSimMode(mode) {
+  simMode = mode;
+  document.getElementById('btn-historique').classList.toggle('active', mode === 'historique');
+  document.getElementById('btn-fixe').classList.toggle('active', mode === 'fixe');
+  document.getElementById('opts-historique').style.display = mode === 'historique' ? 'block' : 'none';
+  document.getElementById('opts-fixe').style.display = mode === 'fixe' ? 'block' : 'none';
+  document.getElementById('numSimsField').style.display = mode === 'fixe' ? 'none' : 'block';
+}
+
+function simulate() {
+  const P0 = parseFloat(document.getElementById('portfolioValue').value);
+  const isPct = retraitMode === 'pct';
+  const W0 = isPct ? 0 : parseFloat(document.getElementById('annualWithdrawal').value);
+  const wPct = isPct ? parseFloat(document.getElementById('withdrawalPct').value) / 100 : 0;
+  const inflAdj = !isPct && document.getElementById('inflationCheck').checked;
+  const inflRate = inflAdj ? parseFloat(document.getElementById('inflationRate').value) / 100 : 0;
+  const years = parseInt(document.getElementById('years').value);
+  const N = parseInt(document.getElementById('numSims').value);
+  const isFixed = simMode === 'fixe';
+  const fixedRate = isFixed ? parseFloat(document.getElementById('fixedRate').value) / 100 : null;
+  const histReturns = isFixed ? null : getHistReturns();
+  const histMethod = isFixed ? null : document.getElementById('histMethod').value;
+
+  if (P0 <= 0 || years < 1) { alert('Veuillez entrer des valeurs valides.'); return; }
+
+  function nextReturn(blockState) {
+    if (isFixed) return 1 + fixedRate;
+    return 1 + sampleHistReturn(histReturns, histMethod, blockState);
   }
 
-  function setRetraitMode(mode) {
-    retraitMode = mode;
-    document.getElementById('btn-retrait-montant').classList.toggle('active', mode === 'montant');
-    document.getElementById('btn-retrait-pct').classList.toggle('active', mode === 'pct');
-    document.getElementById('retrait-montant-wrap').classList.toggle('hidden', mode !== 'montant');
-    document.getElementById('retrait-pct-wrap').classList.toggle('hidden', mode !== 'pct');
+  const allPaths = [], allDetailedPaths = [], finalValues = [];
+  let ruinCount = 0;
+
+  for (let i = 0; i < N; i++) {
+    let val = P0;
+    const path = [val], detailed = [];
+    let ruined = false;
+    const blockState = { remaining: 0, start: 0, pos: 0 };
+
+    for (let y = 1; y <= years; y++) {
+      const withdrawal = isPct ? val*wPct : (inflAdj ? W0*Math.pow(1+inflRate,y-1) : W0);
+      if (val <= 0) { path.push(0); detailed.push({ year:y, startVal:0, returnRate:0, returnAmt:0, afterReturn:0, withdrawal:0, endVal:0, ruined:true }); if (!ruined) ruined = true; continue; }
+      const startVal = val;
+      val = val - withdrawal;
+      if (val < 0) { val = 0; if (!ruined) ruined = true; }
+      const afterWithdrawal = val;
+      const r = nextReturn(blockState);
+      const returnAmt = afterWithdrawal*(r-1);
+      const returnRate = r-1;
+      val = afterWithdrawal * r;
+      detailed.push({ year:y, startVal, withdrawal, afterWithdrawal, returnRate, returnAmt, endVal:val, ruined:false });
+      path.push(val);
+    }
+
+    if (ruined) ruinCount++;
+    allPaths.push(path);
+    allDetailedPaths.push(detailed);
+    finalValues.push(path[years]);
   }
 
-  function setMode(mode) {
-    currentMode = mode;
-    document.getElementById('btn-fixe').classList.toggle('active', mode === 'fixe');
-    document.getElementById('btn-variable').classList.toggle('active', mode === 'variable');
-    document.getElementById('btn-monte').classList.toggle('active', mode === 'monte');
-    document.getElementById('var-options').classList.toggle('hidden', mode !== 'variable');
-    document.getElementById('monte-options').classList.toggle('hidden', mode !== 'monte');
-    const isVariable = mode === 'variable' || mode === 'monte';
-    document.getElementById('field-taux').style.opacity = isVariable ? '0.4' : '1';
-    document.getElementById('field-taux').style.pointerEvents = isVariable ? 'none' : 'auto';
+  const survivePct = ((N - ruinCount) / N) * 100;
+  const finalMedian = percentile(finalValues, 50);
+  const finalP10 = percentile(finalValues, 10);
+  const finalP90 = percentile(finalValues, 90);
+  const finalMean = finalValues.reduce((a,b) => a+b, 0) / N;
+
+  const bands = { p5:[], p10:[], p25:[], p50:[], p75:[], p90:[], p95:[] };
+  const labels = [];
+
+  for (let y = 0; y <= years; y++) {
+    labels.push('An ' + y);
+    const slice = allPaths.map(p => p[y]);
+    bands.p5.push(percentile(slice,5)); bands.p10.push(percentile(slice,10));
+    bands.p25.push(percentile(slice,25)); bands.p50.push(percentile(slice,50));
+    bands.p75.push(percentile(slice,75)); bands.p90.push(percentile(slice,90));
+    bands.p95.push(percentile(slice,95));
   }
 
-  function getVal(id) { return parseFloat(document.getElementById(id).value); }
+  const sampledPaths = [];
+  for (let i = 0; i < Math.min(80,N); i++) sampledPaths.push(allPaths[Math.floor(Math.random()*N)]);
 
-  function setErr(id, msg) {
-    const el = document.getElementById('err-' + id);
-    const inp = document.getElementById(id);
-    if (el) el.textContent = msg;
-    if (msg) inp.classList.add('error'); else inp.classList.remove('error');
+  const sortedByFinal = allPaths.map((path,i) => ({ path, detail:allDetailedPaths[i], finalVal:path[years] })).sort((a,b) => a.finalVal-b.finalVal);
+  const worstEntry = sortedByFinal[0];
+  const bestEntry = sortedByFinal[sortedByFinal.length-1];
+  const middlePool = sortedByFinal.slice(1, sortedByFinal.length-1);
+  const usedMid = new Set(), middleEntries = [];
+  while (middleEntries.length < 8 && middleEntries.length < middlePool.length) {
+    const idx = Math.floor(Math.random()*middlePool.length);
+    if (!usedMid.has(idx)) { usedMid.add(idx); middleEntries.push(middlePool[idx]); }
   }
+  const scenarioEntries = [worstEntry, ...middleEntries, bestEntry];
+  const scenarioPaths = scenarioEntries.map(e => e.path);
+  const scenarioDetails = scenarioEntries.map(e => e.detail);
 
-  // Génère des taux aléatoires contraints autour d'une moyenne cible
-  function genererTaux(n, moyenne, amplitude) {
-    const taux = [];
-    for (let i = 0; i < n; i++) {
-      const u1 = Math.random(), u2 = Math.random();
-      const z = Math.sqrt(-2 * Math.log(u1 + 1e-10)) * Math.cos(2 * Math.PI * u2);
-      const useUniform = Math.random() < 0.25;
-      let t;
-      if (useUniform) {
-        t = moyenne + (Math.random() * 2 - 1) * amplitude;
-      } else {
-        t = moyenne + z * (amplitude / 3);
-      }
-      t = Math.max(-amplitude, Math.min(amplitude, t));
-      taux.push(+t.toFixed(2));
-    }
+  const idxEl = document.getElementById('histIndex');
+  const modeLabel = isFixed ? `Taux fixe · ${(fixedRate*100).toFixed(1)} %` : `Historique · ${idxEl.options[idxEl.selectedIndex].text.split(' ')[0]} · ${histMethod==='bootstrap'?'Bootstrap':'Séquences'}`;
 
-    // Garantir au moins un rendement négatif par tranche de 5 ans
-    for (let bloc = 0; bloc < Math.ceil(n / 5); bloc++) {
-      const debut = bloc * 5;
-      const fin   = Math.min(debut + 5, n);
-      const segment = taux.slice(debut, fin);
-      const hasNeg = segment.some(t => t < 0);
-      if (!hasNeg) {
-        const idx = debut + Math.floor(Math.random() * (fin - debut));
-        const neg = -(1 + Math.random() * (amplitude - 1));
-        taux[idx] = +Math.max(-amplitude, neg).toFixed(2);
-      }
-    }
+  renderResults({ labels, bands, sampledPaths, scenarioPaths, scenarioDetails, finalValues, survivePct, finalMedian, finalP10, finalP90, finalMean, N, years, P0, W0, inflAdj, inflRate, modeLabel, isFixed });
+}
 
-    // Correction de la moyenne : ajuster proportionnellement les taux positifs
-    // pour que la moyenne arithmétique reste proche de la cible
-    const moyActuelle = taux.reduce((s, t) => s + t, 0) / n;
-    const diff = moyenne - moyActuelle;
-    if (Math.abs(diff) > 0.5) {
-      for (let i = 0; i < taux.length; i++) {
-        if (taux[i] > 0) {
-          const ajuste = taux[i] + diff * 1.5;
-          taux[i] = +Math.max(-amplitude, Math.min(amplitude, ajuste)).toFixed(2);
-        }
-      }
-    }
-
-    return taux;
+function renderResults(data) {
+  window._lastSimData = data;
+  // Always refresh MC link state and planificateur when a new simulation runs
+  updateMcLinkState();
+  const useMcChecked = document.getElementById('useMcData') && document.getElementById('useMcData').checked;
+  if (useMcChecked) {
+    retRender();
+    showPlanificateurUpdatedBadge();
   }
+  const { labels, bands, sampledPaths, scenarioPaths, scenarioDetails, finalValues, survivePct, finalMedian, finalP10, finalP90, finalMean, N, years, P0, modeLabel, isFixed } = data;
+  const tc = getThemeColors();
+  const area = document.getElementById('resultsArea');
+  area.innerHTML = '';
 
-  function calculerRows(valeur, taux_list, retrait, age, nb, inflation) {
-    const limite = nb > 0 ? nb : 200;
-    const infl = (inflation || 0) / 100;
-    const rows = [];
-    let v = valeur;
-    let retraitCourant = retrait;
-    for (let i = 0; i < Math.min(limite, taux_list.length); i++) {
-      if (v <= 0.01) break;
-      if (i > 0 && infl > 0) retraitCourant = retraitCourant * (1 + infl);
-      const anneeC  = age + i;
-      const tauxAnn = taux_list[i] / 100;
-      const rend    = v * tauxAnn;
-      const apres   = v + rend;
-      const ret     = Math.min(retraitCourant, apres);
-      const fin     = Math.max(0, apres - ret);
-      rows.push({ anneeC, debut: v, taux: taux_list[i], rend, apres, ret, fin });
-      v = fin;
-      if (v <= 0.01) break;
-    }
-    return rows;
-  }
-
-  function calculer() {
-    ['valeur','taux','retrait','annee','nb'].forEach(k => setErr(k, ''));
-
-    const valeur    = getVal('valeur');
-    const taux      = getVal('taux');
-    const age       = parseInt(document.getElementById('annee').value);
-    const nb        = parseInt(document.getElementById('nb').value);
-    const inflOn    = document.getElementById('inflation-on').checked;
-    const inflation = inflOn ? (parseFloat(document.getElementById('inflation').value) || 2) : 0;
-
-    // Résoudre le retrait selon le mode
-    let retrait;
-    if (retraitMode === 'pct') {
-      const pct = parseFloat(document.getElementById('retrait-pct').value) || 4;
-      if (isNaN(pct) || pct < 0) { setErr('retrait', 'Entrez un % ≥ 0.'); return; }
-      retrait = valeur * pct / 100;
-    } else {
-      retrait = getVal('retrait');
-      if (isNaN(retrait) || retrait < 0) { setErr('retrait', 'Entrez un montant ≥ 0.'); return; }
-    }
-
-    let ok = true;
-    if (!valeur || valeur <= 0)           { setErr('valeur',  'Entrez un montant positif.');        ok = false; }
-    if (currentMode === 'fixe' && (isNaN(taux) || taux < 0)) { setErr('taux', 'Entrez un taux ≥ 0.'); ok = false; }
-    if (!age || age < 1 || age > 120)     { setErr('annee',   'Âge entre 1 et 120 ans.');           ok = false; }
-    if (isNaN(nb) || nb < 0 || nb > 200)  { setErr('nb',      'Entrez un nombre entre 0 et 200.'); ok = false; }
-    if (!ok) return;
-
-    if (currentMode === 'fixe') {
-      calculerFixe(valeur, taux, retrait, age, nb, inflation);
-    } else if (currentMode === 'variable') {
-      calculerVariable(valeur, retrait, age, nb, inflation);
-    } else {
-      calculerMonteCarlo(valeur, retrait, age, nb, inflation);
-    }
-
-    const res = document.getElementById('results');
-    res.classList.remove('hidden');
-  }
-
-  // ── MODE FIXE ──────────────────────────────────────────────────────────────
-  function calculerFixe(valeur, taux, retrait, age, nb, inflation) {
-    const tauxList = Array(nb > 0 ? nb : 200).fill(taux);
-    const rows = calculerRows(valeur, tauxList, retrait, age, nb > 0 ? nb : 200, inflation);
-
-    afficherResume(rows, valeur, age, nb, null);
-    const inflLabel = inflation > 0 ? ` · inflation +${inflation}%` : '';
-    const limite = nb > 0 ? nb : 200;
-    const depleted = rows.length < limite && rows.length > 0 && rows[rows.length-1].fin <= 0.01;
-    afficherOnglets([{ label: 'Taux fixe · ' + taux + '%' + inflLabel, color: null, rows, depleted }]);
-    afficherGraphiqueFixe(rows, age, nb > 0 ? nb : 200);
-    document.getElementById('table-card').classList.remove('hidden');
-    document.getElementById('mc-stats-card').classList.add('hidden');
-    document.getElementById('table-label').classList.add('hidden');
-    let noticeText = '';
-    if (retraitMode === 'pct') {
-      const pct = parseFloat(document.getElementById('retrait-pct').value) || 4;
-      noticeText = `Retrait de ${pct}% = ${fmt(retrait)}/an. `;
-    }
-    if (inflation > 0)
-      noticeText += `Retrait ajusté à l'inflation de ${inflation}% par an. `;
-    if (retrait > rendInit && taux > 0)
-      noticeText += `Le retrait annuel (${fmt(retrait)}) dépasse le rendement initial (${fmt(rendInit)}). Le placement sera progressivement épuisé.`;
-    else if (retrait <= rendInit && taux > 0 && nb === 0 && inflation === 0)
-      noticeText += `Le retrait (${fmt(retrait)}) est inférieur au rendement initial (${fmt(rendInit)}). Le placement ne s'épuise pas — calcul limité à 200 ans.`;
-    else if (taux === 0)
-      noticeText += `Aucun rendement appliqué. Le placement diminue uniquement par les retraits.`;
-    document.getElementById('notice-text').textContent = noticeText;
-    document.getElementById('notice').classList.toggle('hidden', !noticeText);
-    document.getElementById('notice-warn').classList.add('hidden');
-  }
-
-  // ── MODE VARIABLE ──────────────────────────────────────────────────────────
-  function calculerVariable(valeur, retrait, age, nb, inflation) {
-    const moyenne  = getVal('var-moy') || 6;
-    const amplitude= getVal('var-amp') || 20;
-    const nSim     = Math.max(1, Math.min(10, parseInt(document.getElementById('var-nsim').value) || 5));
-    const longueur = nb > 0 ? nb : 60;
-
-    allSimulations = [];
-    for (let s = 0; s < nSim; s++) {
-      const rates = genererTaux(longueur, moyenne, amplitude);
-      const rows  = calculerRows(valeur, rates, retrait, age, longueur, inflation);
-      const moyReal = rates.slice(0, rows.length).reduce((a,b)=>a+b,0) / rows.length;
-      allSimulations.push({ rates, rows, moyReal });
-    }
-
-    visibleSims = new Set(allSimulations.map((_, i) => i));
-
-    // Badges de simulation
-    const badgesEl = document.getElementById('sim-badges');
-    badgesEl.innerHTML = '';
-    document.getElementById('sim-badges-wrap').classList.remove('hidden');
-    allSimulations.forEach((sim, i) => {
-      const b = document.createElement('span');
-      b.className = 'sim-badge active-sim';
-      b.style.background = SIM_COLORS[i];
-      b.style.borderColor = SIM_COLORS[i];
-      b.textContent = `Sim ${i+1} · moy ${sim.moyReal.toFixed(1)}%`;
-      b.onclick = () => toggleSim(i, b);
-      badgesEl.appendChild(b);
-    });
-
-    // Tableau = première simulation visible
-    const firstRows = allSimulations[0].rows;
-    afficherResume(firstRows, valeur, age, nb, allSimulations);
-    afficherOnglets(allSimulations.map((sim, i) => ({
-      label: `Sim ${i+1} · ${sim.moyReal.toFixed(1)}%/an`,
-      color: SIM_COLORS[i],
-      rows:  sim.rows,
-      depleted: sim.rows.length < longueur && sim.rows.length > 0 && sim.rows[sim.rows.length-1].fin <= 0.01,
-    })));
-    afficherGraphiqueVariable(allSimulations, age, longueur);
-    document.getElementById('table-card').classList.remove('hidden');
-    document.getElementById('mc-stats-card').classList.add('hidden');
-    document.getElementById('table-label').classList.add('hidden');
-
-    const pctLabel = retraitMode === 'pct'
-      ? ` Retrait de ${parseFloat(document.getElementById('retrait-pct').value)||4}% = ${fmt(retrait)}/an.`
-      : '';
-    document.getElementById('notice-text').textContent =
-      `Mode simulation : ${nSim} scénarios générés avec des taux oscillant de ±${amplitude}% autour d'une moyenne de ${moyenne}%.` +
-      pctLabel +
-      (inflation > 0 ? ` Retrait ajusté à l'inflation de ${inflation}% par an.` : '') +
-      ` Le tableau affiche la simulation 1.`;
-    document.getElementById('notice').classList.remove('hidden');
-
-    // Avertissement si des simulations s'épuisent avant le terme
-    const depletedSims = allSimulations
-      .map((sim, i) => ({ i, sim }))
-      .filter(({ sim }) => sim.rows.length < longueur && sim.rows.length > 0 && sim.rows[sim.rows.length-1].fin <= 0.01);
-    const warnEl = document.getElementById('notice-warn');
-    if (depletedSims.length > 0) {
-      const labels = depletedSims.map(({ i, sim }) => `Sim ${i+1} (à ${sim.rows[sim.rows.length-1].anneeC} ans)`).join(', ');
-      const s = depletedSims.length > 1 ? 's' : '';
-      document.getElementById('notice-warn-text').textContent =
-        `${depletedSims.length} simulation${s} épuisée${s} avant le terme : ${labels}.`;
-      warnEl.classList.remove('hidden');
-    } else {
-      warnEl.classList.add('hidden');
-    }
-  }
-
-  // ── MODE MONTE CARLO ───────────────────────────────────────────────────────
-  function calculerMonteCarlo(valeur, retrait, age, nb, inflation) {
-    const moyenne   = getVal('mc-moy') || 6;
-    const amplitude = getVal('mc-amp') || 20;
-    const nSim      = Math.max(1, Math.min(10000, parseInt(document.getElementById('mc-nsim').value) || 1000));
-    const longueur  = nb > 0 ? nb : 60;
-
-    // Générer toutes les simulations
-    const finalSoldes = [];
-    const allMcSims = [];
-    const percentileData = { p10:[], p25:[], p50:[], p75:[], p90:[] };
-    const allFins = Array.from({ length: longueur }, () => []);
-    let depletedCount = 0;
-
-    for (let s = 0; s < nSim; s++) {
-      const rates = genererTaux(longueur, moyenne, amplitude);
-      const rows  = calculerRows(valeur, rates, retrait, age, longueur, inflation);
-      allMcSims.push(rows);
-      const depleted = rows.length < longueur && rows.length > 0 && rows[rows.length-1].fin <= 0.01;
-      if (depleted) depletedCount++;
-
-      // Remplir toutes les années (0 après épuisement)
-      for (let i = 0; i < longueur; i++) {
-        allFins[i].push(rows[i] ? rows[i].fin : 0);
-      }
-      const finalFin = rows.length > 0 ? rows[rows.length-1].fin : 0;
-      finalSoldes.push(depleted ? 0 : finalFin);
-    }
-
-    // Calculer les percentiles pour chaque année
-    const labels = Array.from({ length: longueur }, (_, i) => age + i);
-    const pKeys = [10, 25, 50, 75, 90];
-    const pData = pKeys.map(() => []);
-    for (let i = 0; i < longueur; i++) {
-      const sorted = allFins[i].slice().sort((a, b) => a - b);
-      pKeys.forEach((p, pi) => {
-        const idx = Math.floor((p / 100) * (sorted.length - 1));
-        pData[pi].push(+sorted[idx].toFixed(2));
-      });
-    }
-
-    // Statistiques sur les soldes finaux
-    finalSoldes.sort((a, b) => a - b);
-    const mean = finalSoldes.reduce((s, v) => s + v, 0) / nSim;
-    const median = finalSoldes[Math.floor(nSim * 0.5)];
-    const p10f = finalSoldes[Math.floor(nSim * 0.10)];
-    const p90f = finalSoldes[Math.floor(nSim * 0.90)];
-    const survivalRate = ((nSim - depletedCount) / nSim * 100).toFixed(1);
-
-    // Afficher stats
-    document.getElementById('mc-stats-card').classList.remove('hidden');
-    document.getElementById('mc-stats-grid').innerHTML = `
-      <div class="mc-stat highlight">
-        <div class="mc-label">Taux de survie</div>
-        <div class="mc-value">${survivalRate}%</div>
+  const statsHTML = isFixed ? '' : `
+    <div class="stats-grid fade-in">
+      <div class="stat-card">
+        <div class="stat-label">Probabilité de survie</div>
+        <div class="stat-value ${survivePct>=80?'green':survivePct>=60?'gold':'red'}">${fmtPct(survivePct)}</div>
+        <div class="prob-bar-wrap"><div class="prob-bar-track"><div class="prob-bar-fill" style="width:${survivePct}%"></div></div></div>
       </div>
-      <div class="mc-stat">
-        <div class="mc-label">Solde médian (P50)</div>
-        <div class="mc-value">${fmt(median)}</div>
+      <div class="stat-card">
+        <div class="stat-label">Valeur médiane finale</div>
+        <div class="stat-value blue">${mcFmt(finalMedian)}</div>
+        <div class="stat-sub">Percentile 50</div>
       </div>
-      <div class="mc-stat">
-        <div class="mc-label">Solde moyen</div>
-        <div class="mc-value">${fmt(mean)}</div>
+      <div class="stat-card">
+        <div class="stat-label">Scénario pessimiste</div>
+        <div class="stat-value ${finalP10<=0?'red':'gold'}">${finalP10<=0?'Épuisé':mcFmt(finalP10)}</div>
+        <div class="stat-sub">Percentile 10</div>
       </div>
-      <div class="mc-stat ${p10f <= 0 ? 'negative' : ''}">
-        <div class="mc-label">Scénario pessimiste (P10)</div>
-        <div class="mc-value">${fmt(p10f)}</div>
+      <div class="stat-card">
+        <div class="stat-label">Scénario optimiste</div>
+        <div class="stat-value green">${mcFmt(finalP90)}</div>
+        <div class="stat-sub">Percentile 90</div>
       </div>
-      <div class="mc-stat positive">
-        <div class="mc-label">Scénario optimiste (P90)</div>
-        <div class="mc-value">${fmt(p90f)}</div>
+    </div>`;
+
+  const pcts = [5,10,25,50,75,90,95];
+  const pctColors = ['#ef4444','#f97316','#f59e0b','#3b82f6','#10b981','#06b6d4','#818cf8'];
+  const pctRowsHTML = pcts.map((p,i) => {
+    const val = percentile(finalValues, p);
+    const label = p===50?'Médian':p<50?'Pessimiste':'Optimiste';
+    return `<tr><td><span class="pct-badge" style="background:${pctColors[i]}"></span>P${p}</td><td style="color:${pctColors[i]};font-size:0.72rem">${label}</td><td style="color:${val<=0?'#ef4444':pctColors[i]}">${val<=0?'Épuisé':mcFmt(val)}</td></tr>`;
+  }).join('');
+
+  const mainChartHTML = `
+    <div class="panel fade-in chart-panel">
+      <div class="panel-header">
+        <div class="icon">📈</div>
+        <h2>Trajectoires du portefeuille</h2>
+        ${isFixed ? '' : `<div class="pct-popover-wrap">
+          <button class="pct-popover-btn" onclick="togglePctPopover(event)" title="Tableau des percentiles">📋</button>
+          <div class="pct-popover" id="pctPopover">
+            <div class="pct-popover-title">Tableau des percentiles</div>
+            <table class="pct-table"><thead><tr><th>Percentile</th><th>Scénario</th><th>Valeur finale</th></tr></thead><tbody>${pctRowsHTML}</tbody></table>
+          </div>
+        </div>`}
       </div>
-      <div class="mc-stat ${depletedCount > 0 ? 'negative' : 'positive'}">
-        <div class="mc-label">Simulations épuisées</div>
-        <div class="mc-value">${depletedCount} / ${nSim}</div>
+      <canvas id="mainChart" height="320"></canvas>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-line" style="background:#3b82f6;opacity:0.25;height:8px;border-radius:2px;"></div> Trajectoires individuelles</div>
+        <div class="legend-item"><div class="legend-line" style="background:#3b82f6"></div> Médiane (P50)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> P90</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> P25</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> P10</div>
       </div>
-    `;
+    </div>`;
 
-    // Masquer badges sim, afficher graphique percentiles
-    document.getElementById('sim-badges-wrap').classList.add('hidden');
-    document.getElementById('notice-warn').classList.add('hidden');
+  const scenColors = ['#ef4444','#f97316','#f59e0b','#84cc16','#10b981','#06b6d4','#3b82f6','#8b5cf6','#ec4899','#10b981'];
+  let scenHTML;
 
-    afficherGraphiqueMonteCarlo(labels, pData, age);
-
-    // Choisir 5 simulations au hasard et les afficher en onglets
-    const mcSims = allMcSims;
-    const picked = [];
-    const used = new Set();
-    while (picked.length < Math.min(5, mcSims.length)) {
-      const idx = Math.floor(Math.random() * mcSims.length);
-      if (!used.has(idx)) { used.add(idx); picked.push({ idx, rows: mcSims[idx] }); }
-    }
-    const tabColors = ['#e07b3a','#4c8fc9','#7c5cbf','#3dba7e','#e05c6a'];
-    afficherOnglets(picked.map(({ idx, rows }, i) => {
-      const depleted = rows.length < longueur && rows.length > 0 && rows[rows.length-1].fin <= 0.01;
-      const moyTaux = (rows.reduce((s, r) => s + r.taux, 0) / rows.length).toFixed(1);
-      return { label: `Ex. ${i+1} · ${moyTaux}%/an`, color: tabColors[i], rows, depleted };
-    }));
-    document.getElementById('table-card').classList.remove('hidden');
-    document.getElementById('table-label').classList.remove('hidden');
-    document.getElementById('table-label').textContent = `5 simulations choisies au hasard parmi les ${nSim} simulations générées`;
-
-    const pctLabel = retraitMode === 'pct'
-      ? ` Retrait de ${parseFloat(document.getElementById('retrait-pct').value)||4}% = ${fmt(retrait)}/an.`
-      : '';
-    document.getElementById('notice-text').textContent =
-      `Monte Carlo : ${nSim} simulations avec taux oscillant de ±${amplitude}% autour de ${moyenne}%.${pctLabel}` +
-      (inflation > 0 ? ` Retrait ajusté à l'inflation de ${inflation}% par an.` : '') +
-      ` 5 exemples choisis au hasard sont affichés dans le tableau.`;
-    document.getElementById('notice').classList.remove('hidden');
+  if (isFixed) {
+    const detail = scenarioDetails[0];
+    const rows = detail.map(d => {
+      if (d.ruined) return `<tr class="sc-row-ruined"><td>An ${d.year}</td><td colspan="6" style="color:var(--red);font-style:italic;text-align:center;">Portefeuille épuisé</td></tr>`;
+      const rPct = (d.returnRate*100).toFixed(2);
+      const rColor = d.returnRate>=0?'var(--green)':'var(--red)';
+      const rSign = d.returnRate>=0?'+':'';
+      return `<tr><td class="sc-year">An ${d.year}</td><td class="sc-num">${mcFmt(d.startVal)}</td><td class="sc-num sc-withdrawal">−${mcFmt(d.withdrawal)}</td><td class="sc-num">${mcFmt(d.afterWithdrawal)}</td><td class="sc-num" style="color:${rColor}">${rSign}${rPct} %</td><td class="sc-num" style="color:${rColor}">${rSign}${mcFmt(d.returnAmt)}</td><td class="sc-num sc-end">${mcFmt(d.endVal)}</td></tr>`;
+    }).join('');
+    scenHTML = `<div class="fade-in"><div class="panel"><div class="panel-header"><div class="icon">📊</div><h2>Détail annuel — taux fixe</h2></div><div class="sc-table-wrap active"><table class="sc-table"><thead><tr><th>Année</th><th>Valeur début</th><th>Retrait</th><th>Après retrait</th><th>Rendement %</th><th>Rendement $</th><th>Valeur fin</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
+  } else {
+    const scenLabels = ['😟 Le pire','2','3','4','5','6','7','8','9','😊 Le meilleur'];
+    const tabBtns = scenarioDetails.map((detail,i) => {
+      const isRuined = detail.some(d => d.ruined || d.endVal===0);
+      return `<button class="sc-tab ${i===0?'active':''}" onclick="switchScenTab(${i})" style="--sc-color:${scenColors[i]}">${scenLabels[i]}${isRuined?' <span title="Portefeuille épuisé" style="font-size:0.75em;">💀</span>':''}</button>`;
+    }).join('');
+    const tables = scenarioDetails.map((detail,i) => {
+      const rows = detail.map(d => {
+        if (d.ruined) return `<tr class="sc-row-ruined"><td>An ${d.year}</td><td colspan="6" style="color:var(--red);font-style:italic;text-align:center;">Portefeuille épuisé</td></tr>`;
+        const rPct = (d.returnRate*100).toFixed(2);
+        const rColor = d.returnRate>=0?'var(--green)':'var(--red)';
+        const rSign = d.returnRate>=0?'+':'';
+        return `<tr><td class="sc-year">An ${d.year}</td><td class="sc-num">${mcFmt(d.startVal)}</td><td class="sc-num sc-withdrawal">−${mcFmt(d.withdrawal)}</td><td class="sc-num">${mcFmt(d.afterWithdrawal)}</td><td class="sc-num" style="color:${rColor}">${rSign}${rPct} %</td><td class="sc-num" style="color:${rColor}">${rSign}${mcFmt(d.returnAmt)}</td><td class="sc-num sc-end">${mcFmt(d.endVal)}</td></tr>`;
+      }).join('');
+      return `<div class="sc-table-wrap ${i===0?'active':''}" data-sc="${i}"><table class="sc-table"><thead><tr><th>Année</th><th>Valeur début</th><th>Retrait</th><th>Après retrait</th><th>Rendement %</th><th>Rendement $</th><th>Valeur fin</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }).join('');
+    scenHTML = `<div class="fade-in"><div class="panel"><div class="panel-header"><div class="icon">🎲</div><h2>10 scénarios aléatoires — détail annuel</h2></div><div class="sc-tabs">${tabBtns}</div><div class="scenarios-wrap">${tables}</div></div></div>`;
   }
 
-  function afficherGraphiqueMonteCarlo(labels, pData, age) {
-    if (window._chart) window._chart.destroy();
-    const ctx = document.getElementById('chart').getContext('2d');
-    const c = getThemeColors();
+  area.innerHTML = statsHTML + mainChartHTML + scenHTML;
 
-    // Couleurs des bandes
-    const bandColors = [
-      { fill: 'rgba(37,99,176,0.08)',  border: 'transparent' }, // P10
-      { fill: 'rgba(37,99,176,0.14)',  border: 'transparent' }, // P25
-      { fill: 'rgba(37,99,176,0.22)',  border: c.accent      }, // P50 médiane
-      { fill: 'rgba(37,99,176,0.14)',  border: 'transparent' }, // P75
-      { fill: 'rgba(37,99,176,0.08)',  border: 'transparent' }, // P90
-    ];
-    const pLabels = ['P10', 'P25', 'P50 (médiane)', 'P75', 'P90'];
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  if (chartMain) chartMain.destroy();
 
-    const datasets = pData.map((data, i) => ({
-      label: pLabels[i],
-      data,
-      borderColor: bandColors[i].border,
-      backgroundColor: bandColors[i].fill,
-      borderWidth: i === 2 ? 2.5 : 0,
-      pointRadius: 0,
-      tension: 0.35,
-      fill: i === 0 ? false : i === 1 ? 0 : i === 3 ? 2 : i === 4 ? 3 : false,
-    }));
+  const sampleDatasets = isFixed ? [] : sampledPaths.map(path => ({ data:path, borderColor:'rgba(59,130,246,0.08)', borderWidth:1, pointRadius:0, fill:false, tension:0.3 }));
+  const bandDatasets = isFixed ? [{ data:scenarioPaths[0], borderColor:'#3b82f6', borderWidth:2.5, pointRadius:0, fill:false, tension:0.4 }] : [
+    { label:'P90', data:bands.p90, borderColor:'#10b981', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4 },
+    { label:'P75', data:bands.p75, borderColor:'rgba(16,185,129,0.4)', borderWidth:1, pointRadius:0, fill:'+1', backgroundColor:'rgba(16,185,129,0.05)', tension:0.4 },
+    { label:'P50 (Médiane)', data:bands.p50, borderColor:'#3b82f6', borderWidth:2.5, pointRadius:0, fill:false, tension:0.4 },
+    { label:'P25', data:bands.p25, borderColor:'rgba(249,115,22,0.5)', borderWidth:1, pointRadius:0, fill:false, tension:0.4 },
+    { label:'P10', data:bands.p10, borderColor:'#ef4444', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4 },
+  ];
 
-    window._chart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets },
-      options: chartOptions(c, 'Âge')
-    });
-
-    // Légende
-    const legendEl = document.getElementById('chart-legend');
-    legendEl.innerHTML = `
-      <div class="legend-item"><div class="legend-dot" style="background:rgba(37,99,176,0.15);border:1px solid var(--border);"></div>P10 – P25</div>
-      <div class="legend-item"><div class="legend-dot" style="background:rgba(37,99,176,0.25);border:1px solid var(--border);"></div>P25 – P75</div>
-      <div class="legend-item"><div class="legend-dot" style="background:${c.accent};"></div>P50 médiane</div>
-      <div class="legend-item"><div class="legend-dot" style="background:rgba(37,99,176,0.15);border:1px solid var(--border);"></div>P75 – P90</div>
-    `;
-  }
-
-  function toggleSim(idx, badge) {
-    if (visibleSims.has(idx)) {
-      if (visibleSims.size <= 1) return; // garder au moins 1
-      visibleSims.delete(idx);
-      badge.style.background = 'transparent';
-      badge.style.color = SIM_COLORS[idx];
-      badge.classList.remove('active-sim');
-    } else {
-      visibleSims.add(idx);
-      badge.style.background = SIM_COLORS[idx];
-      badge.style.color = '#fff';
-      badge.classList.add('active-sim');
-    }
-    // Mettre à jour le graphique
-    if (window._chart) {
-      window._chart.data.datasets.forEach((ds, i) => {
-        ds.hidden = !visibleSims.has(i);
-      });
-      window._chart.update();
-    }
-  }
-
-  // ── RÉSUMÉ ─────────────────────────────────────────────────────────────────
-  function afficherResume(rows, valeur, age, nb, sims) {
-    // Éléments supprimés — fonction conservée pour compatibilité
-  }
-
-  // ── TABLEAU AVEC ONGLETS ──────────────────────────────────────────────────
-  function buildTableHTML(rows) {
-    const thead = `<thead><tr>
-      <th>Âge</th>
-      <th>Valeur début</th>
-      <th>Rendement (%)</th>
-      <th>Rendement ($)</th>
-      <th>Après rendement</th>
-      <th>Retrait</th>
-      <th>Valeur fin</th>
-    </tr></thead>`;
-    const tbody = '<tbody>' + rows.map(r => {
-      const finClass  = r.fin  <= 0.01 ? 'val-fin-zero' : 'val-fin-positive';
-      const tauxClass = r.taux  < 0    ? 'taux-neg'     : 'taux-pos';
-      return `<tr>
-        <td>${r.anneeC}</td>
-        <td>${fmt(r.debut)}</td>
-        <td class="${tauxClass}">${fmtPct(r.taux)}</td>
-        <td>${fmt(r.rend)}</td>
-        <td>${fmt(r.apres)}</td>
-        <td>${fmt(r.ret)}</td>
-        <td class="${finClass}">${fmt(r.fin)}</td>
-      </tr>`;
-    }).join('') + '</tbody>';
-    return `<div class="table-wrap"><table>${thead}${tbody}</table></div>`;
-  }
-
-  function afficherOnglets(tabsData) {
-    // tabsData = [{label, color, rows}]
-    const header  = document.getElementById('tabs-header');
-    const content = document.getElementById('tabs-content');
-    header.innerHTML  = '';
-    content.innerHTML = '';
-
-    tabsData.forEach((tab, i) => {
-      // Bouton onglet
-      const btn = document.createElement('button');
-      btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
-      const starHtml = tab.depleted ? ' <span style="color:#e05c6a;font-size:15px;line-height:1;vertical-align:middle;" title="Épuisé avant le terme">⚠️</span>' : '';
-      btn.innerHTML = tab.color
-        ? `<span class="tab-dot" style="background:${tab.color}"></span>${tab.label}${starHtml}`
-        : tab.label + starHtml;
-      btn.onclick = () => switchTab(i);
-      header.appendChild(btn);
-
-      // Panneau
-      const pane = document.createElement('div');
-      pane.className = 'tab-pane' + (i === 0 ? ' active' : '');
-      pane.id = `tab-pane-${i}`;
-      pane.innerHTML = buildTableHTML(tab.rows);
-      content.appendChild(pane);
-    });
-  }
-
-  function switchTab(idx) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
-    document.querySelectorAll('.tab-pane').forEach((p, i) => p.classList.toggle('active', i === idx));
-  }
-
-  // ── GRAPHIQUE MODE FIXE ────────────────────────────────────────────────────
-  function afficherGraphiqueFixe(rows, age, nb) {
-    // Construire la plage complète d'années
-    const fullLabels = Array.from({ length: nb }, (_, i) => age + i);
-    const dataMap = Object.fromEntries(rows.map(r => [r.anneeC, r.fin]));
-    const dataValeur = fullLabels.map(a => dataMap[a] != null ? +dataMap[a].toFixed(2) : 0);
-
-    if (window._chart) window._chart.destroy();
-    const ctx = document.getElementById('chart').getContext('2d');
-    const c = getThemeColors();
-
-    const grad = ctx.createLinearGradient(0, 0, 0, 340);
-    grad.addColorStop(0, c.gradStart);
-    grad.addColorStop(1, 'rgba(37,99,176,0.01)');
-
-    window._chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: fullLabels,
-        datasets: [{
-          label: 'Valeur du placement',
-          data: dataValeur,
-          borderColor: c.accent,
-          backgroundColor: grad,
-          borderWidth: 2.5,
-          pointRadius: fullLabels.length > 40 ? 0 : 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: c.accent,
-          pointBorderColor: c.pointBorder,
-          pointBorderWidth: 2,
-          tension: 0.35,
-          fill: true,
-        }]
-      },
-      options: chartOptions(c, 'Âge')
-    });
-
-    // Légende
-    document.getElementById('sim-badges-wrap').classList.add('hidden');
-    const legendEl = document.getElementById('chart-legend');
-    legendEl.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:${c.accent}"></div>Valeur du placement</div>`;
-  }
-
-  // ── GRAPHIQUE MODE VARIABLE ────────────────────────────────────────────────
-  function afficherGraphiqueVariable(sims, age, nb) {
-    if (window._chart) window._chart.destroy();
-    const ctx = document.getElementById('chart').getContext('2d');
-    const c = getThemeColors();
-
-    // Plage complète d'années
-    const fullLabels = Array.from({ length: nb }, (_, i) => age + i);
-
-    const datasets = sims.map((sim, i) => {
-      const map = Object.fromEntries(sim.rows.map(r => [r.anneeC, r.fin]));
-      return {
-        label: `Sim ${i+1} (moy ${sim.moyReal.toFixed(1)}%)`,
-        data: fullLabels.map(a => map[a] != null ? +map[a].toFixed(2) : 0),
-        borderColor: SIM_COLORS[i],
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointRadius: fullLabels.length > 40 ? 0 : 3,
-        pointHoverRadius: 5,
-        tension: 0.35,
-        fill: false,
-        spanGaps: true,
-        hidden: !visibleSims.has(i),
-      };
-    });
-
-    window._chart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: fullLabels, datasets },
-      options: chartOptions(c, 'Âge')
-    });
-
-    // Légende dynamique
-    const legendEl = document.getElementById('chart-legend');
-    legendEl.innerHTML = sims.map((sim, i) =>
-      `<div class="legend-item"><div class="legend-dot" style="background:${SIM_COLORS[i]}"></div>Sim ${i+1} · ${sim.moyReal.toFixed(1)}%/an</div>`
-    ).join('');
-  }
-
-  function chartOptions(c, xLabel) {
-    return {
+  chartMain = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [...sampleDatasets, ...bandDatasets] },
+    options: {
       responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
+      animation: { duration: 600 },
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: c.tooltipBg,
-          borderColor: c.tooltipBorder,
-          borderWidth: 1,
-          titleColor: c.accent,
-          bodyColor: c.tooltipBody,
-          padding: 12,
-          titleFont: { family: 'DM Mono', size: 12 },
-          bodyFont: { family: 'DM Mono', size: 12 },
-          callbacks: {
-            title: items => `Âge ${items[0].label} ans`,
-            label: item => {
-              if (item.raw == null) return null;
-              const v = item.raw.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-              return `  ${item.dataset.label} : $\u202f${v}`;
-            }
-          }
+          mode:'index', intersect:false,
+          filter: item => isFixed ? item.datasetIndex===0 : item.dataset.label!==undefined,
+          backgroundColor:tc.tooltip, borderColor:tc.tooltipBorder, borderWidth:1,
+          titleColor:tc.tooltipTitle, bodyColor:tc.tooltipBody,
+          titleFont:{family:'DM Mono',size:11}, bodyFont:{family:'DM Mono',size:12},
+          callbacks: { label: ctx => { if (isFixed) return ` Valeur : ${mcFmt(ctx.parsed.y)}`; if (!ctx.dataset.label) return null; return ` ${ctx.dataset.label}: ${mcFmt(ctx.parsed.y)}`; } }
         }
       },
       scales: {
-        x: {
-          ticks: { color: c.muted, font: { family: 'DM Mono', size: 11 }, maxTicksLimit: 100, autoSkip: false },
-          grid: { color: c.border },
-          border: { color: c.borderLine },
-        },
-        y: {
-          ticks: {
-            color: c.accent,
-            font: { family: 'DM Mono', size: 11 },
-            callback: v => '$\u202f' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0)),
-          },
-          grid: { color: c.grid },
-          border: { color: c.borderLine, dash: [4,4] },
+        x: { grid:{color:tc.grid}, ticks:{color:tc.tick,font:{family:'DM Mono',size:10},maxTicksLimit:10} },
+        y: { grid:{color:tc.grid}, ticks:{color:tc.tick,font:{family:'DM Mono',size:10}, callback:v=>{ if(Math.abs(v)>=1e6) return (v/1e6).toFixed(1)+' M$'; if(Math.abs(v)>=1e3) return (v/1e3).toFixed(0)+' k$'; return v+'$'; }}, min:0, max:Math.max(...bands.p90) }
+      }
+    }
+  });
+}
+
+function switchScenTab(idx) {
+  document.querySelectorAll('.sc-tab').forEach((btn,i) => btn.classList.toggle('active', i===idx));
+  document.querySelectorAll('.sc-table-wrap').forEach(el => el.classList.toggle('active', parseInt(el.dataset.sc)===idx));
+}
+
+function togglePctPopover(e) {
+  e.stopPropagation();
+  const pop = document.getElementById('pctPopover');
+  pop.classList.toggle('open');
+}
+
+document.addEventListener('click', () => {
+  const pop = document.getElementById('pctPopover');
+  if (pop) pop.classList.remove('open');
+});
+
+// ===================== RETRAITE LOGIC =====================
+window._retChartInstance = null;
+let retPensionMode = 'rregop';
+let retAmountMode = 'annuel';
+let mcScenario = 'p50'; // p10, p50, p90, fixed
+
+function onMcLinkChange() {
+  const checked = document.getElementById('useMcData').checked;
+  const body = document.getElementById('mcLinkBody');
+  body.style.display = checked ? 'flex' : 'none';
+  updateMcLinkState();
+  retRender();
+}
+
+function updateMcLinkState() {
+  const data = window._lastSimData;
+  const noData = document.getElementById('mcLinkNoData');
+  const controls = document.getElementById('mcLinkControls');
+  const fixedBtn  = document.getElementById('mcScenFixed');
+  const worstBtn  = document.getElementById('mcScenWorst');
+  const p10Btn    = document.querySelector('.mc-scen-btn[onclick*="p10"]');
+  const p50Btn    = document.querySelector('.mc-scen-btn[onclick*="p50"]');
+  const p90Btn    = document.querySelector('.mc-scen-btn[onclick*="p90"]');
+
+  if (!data) {
+    noData.style.display = '';
+    controls.style.display = 'none';
+    return;
+  }
+  noData.style.display = 'none';
+  controls.style.display = '';
+
+  if (data.isFixed) {
+    // Mode taux fixe : une seule trajectoire — masquer Pire/P10/P50/P90, afficher Taux fixe
+    if (worstBtn) worstBtn.style.display = 'none';
+    if (p10Btn)   p10Btn.style.display   = 'none';
+    if (p50Btn)   p50Btn.style.display   = 'none';
+    if (p90Btn)   p90Btn.style.display   = 'none';
+    if (fixedBtn) fixedBtn.style.display = '';
+    if (mcScenario !== 'fixed') setMcScenario('fixed');
+    else updateMcLinkInfo();
+  } else {
+    // Mode Monte Carlo : afficher Pire/P10/P50/P90, masquer Taux fixe
+    if (worstBtn) worstBtn.style.display = '';
+    if (p10Btn)   p10Btn.style.display   = '';
+    if (p50Btn)   p50Btn.style.display   = '';
+    if (p90Btn)   p90Btn.style.display   = '';
+    if (fixedBtn) fixedBtn.style.display = 'none';
+    if (mcScenario === 'fixed') setMcScenario('p50');
+    else updateMcLinkInfo();
+  }
+}
+
+function setMcScenario(scenario) {
+  mcScenario = scenario;
+  document.querySelectorAll('.mc-scen-btn').forEach(btn => btn.classList.remove('active'));
+  // Mark the matching button active by its onclick attribute or id
+  if (scenario === 'fixed') {
+    const btn = document.getElementById('mcScenFixed');
+    if (btn) btn.classList.add('active');
+  } else if (scenario === 'worst') {
+    const btn = document.getElementById('mcScenWorst');
+    if (btn) btn.classList.add('active');
+  } else {
+    const btn = document.querySelector(`.mc-scen-btn[onclick*="${scenario}"]`);
+    if (btn) btn.classList.add('active');
+  }
+  updateMcLinkInfo();
+  retRender();
+}
+
+function getMcWithdrawal(year) {
+  // year = 0-based index from startAge
+  const data = window._lastSimData;
+  if (!data) return 0;
+  const { bands, isFixed, scenarioPaths, W0, inflAdj, inflRate } = data;
+
+  if (isFixed && mcScenario === 'fixed') {
+    // Use fixed trajectory withdrawal (same every year with inflation)
+    const w = inflAdj ? W0 * Math.pow(1 + inflRate, year) : W0;
+    return w;
+  }
+
+  // For percentile bands, the "withdrawal" at each year is constant (W0 with inflation)
+  // What we expose is the annual withdrawal amount from the MC simulation
+  const w = inflAdj ? W0 * Math.pow(1 + inflRate, year) : W0;
+  return w;
+}
+
+function getMcAnnualWithdrawal() {
+  const data = window._lastSimData;
+  if (!data) return 0;
+  const { W0, inflAdj, inflRate, isFixed } = data;
+  // Return the base annual withdrawal (year 0)
+  return W0 || 0;
+}
+
+function updateMcLinkInfo() {
+  const data = window._lastSimData;
+  const el = document.getElementById('mcLinkInfo');
+  if (!el || !data) return;
+  const w = data.W0 || 0;
+  const inflAdj = data.inflAdj;
+  const inflRate = data.inflRate;
+  const mcStartAge = document.getElementById('mcWithdrawalStartAge') ? (parseInt(document.getElementById('mcWithdrawalStartAge').value)||65) : 65;
+  const label = mcScenario === 'fixed'  ? 'Taux fixe (Simulateur)'
+    : mcScenario === 'worst' ? 'Simulateur — Le pire scénario'
+    : mcScenario === 'p10'   ? 'Simulateur — P10 (pessimiste)'
+    : mcScenario === 'p90'   ? 'Simulateur — P90 (optimiste)'
+    : 'Simulateur — P50 (médiane)';
+  el.innerHTML = `<strong>${label}</strong><br>Retrait de base : ${retFmt(w)}/an${inflAdj ? ` · indexé ${(inflRate*100).toFixed(1)}%/an` : ''}<br>Début des retraits : <strong>${mcStartAge} ans</strong>`;
+}
+
+function setAmountMode(mode) {
+  retAmountMode = mode;
+  document.getElementById('btnAnnuel').classList.toggle('active', mode==='annuel');
+  document.getElementById('btnMensuel').classList.toggle('active', mode==='mensuel');
+  retRender();
+}
+
+function setPensionMode(mode) {
+  retPensionMode = mode;
+  document.getElementById('btnRREGOP').classList.toggle('active', mode==='rregop');
+  document.getElementById('btnPension').classList.toggle('active', mode==='pension');
+  document.getElementById('fieldsRREGOP').style.display = mode==='rregop' ? '' : 'none';
+  document.getElementById('fieldsPension').style.display = mode==='pension' ? '' : 'none';
+  retRender();
+}
+
+function retFmt(n) { return n.toLocaleString('fr-CA', { style:'currency', currency:'CAD', maximumFractionDigits:0 }); }
+function retFmtK(n) { if (n>=1000) return (n/1000).toFixed(1)+'k'; return Math.round(n).toString(); }
+
+function calcRRQFactor(startAge) {
+  if (startAge < 65) return 1 - 0.005*(65-startAge)*12;
+  if (startAge > 65) return 1 + 0.007*(startAge-65)*12;
+  return 1;
+}
+
+function calcPSVFactor(startAge) {
+  if (startAge <= 65) return 1;
+  return 1 + 0.006*(startAge-65)*12;
+}
+
+function calcRREGOPPenalty(renteAge, anneesService) {
+  if (renteAge>=61 || (renteAge>=60 && (renteAge+anneesService)>=90) || anneesService>=35) {
+    return { factor:1, penaltyPct:0, moisAnticipation:0, critereAtteint:'Aucune pénalité' };
+  }
+  const moisJusqu61 = Math.max(0,(61-renteAge)*12);
+  const critere2Age = Math.max(60,90-anneesService);
+  const moisJusqu90 = renteAge>=critere2Age ? 0 : Math.max(0,(critere2Age-renteAge)*12);
+  const candidates = [moisJusqu61];
+  if (critere2Age>=60) candidates.push(moisJusqu90);
+  const moisAnticipation = Math.min(...candidates);
+  const penaltyPct = moisAnticipation*0.005;
+  const factor = Math.max(0,1-penaltyPct);
+  let critereAtteint = `61 ans (${moisJusqu61} mois d'anticipation)`;
+  if (moisAnticipation===moisJusqu90 && moisJusqu90<moisJusqu61) critereAtteint = `Facteur 90 (${moisJusqu90} mois d'anticipation)`;
+  return { factor, penaltyPct, moisAnticipation, critereAtteint };
+}
+
+function getData() {
+  const birthYear = parseInt(document.getElementById('birthYear').value)||1971;
+  const endAge = parseInt(document.getElementById('endAge').value)||90;
+
+  let pensionAnnual=0, pensionStartAge=55, pensionIdxEffective=0;
+
+  if (retPensionMode==='rregop') {
+    const pensionAge = parseInt(document.getElementById('pensionAge').value);
+    const rregopRenteAge = parseInt(document.getElementById('rregopRenteAge').value);
+    const rregopSalaire = parseFloat(document.getElementById('rregopSalaire').value)||0;
+    const rregopAnnees = Math.min(40,parseFloat(document.getElementById('rregopAnnees').value)||0);
+    const rregopMGA = parseFloat(document.getElementById('rregopMGA').value)||71300;
+    pensionIdxEffective = parseFloat(document.getElementById('pensionIndex').value)/100;
+    pensionStartAge = rregopRenteAge;
+    const rregopBase = rregopAnnees*0.02*rregopSalaire;
+    const { factor, penaltyPct, moisAnticipation, critereAtteint } = calcRREGOPPenalty(rregopRenteAge, rregopAnnees);
+    pensionAnnual = rregopBase*factor;
+    const anneesCoord = Math.min(35,rregopAnnees);
+    const baseCoord = Math.min(rregopSalaire,rregopMGA);
+    const coordination = anneesCoord*0.007*baseCoord;
+    const infoEl = document.getElementById('rregopInfo');
+    if (infoEl) {
+      const gap = rregopRenteAge-pensionAge;
+      const gapLine = gap>0 ? `<strong>Période sans rente :</strong> <span style="color:var(--total)">${gap} an${gap>1?'s':''} (${pensionAge}→${rregopRenteAge} ans)</span><br>` : '';
+      const coordLine = `<strong>Coordination RRQ à 65 ans :</strong> ${anneesCoord} ans × 0,7% × ${retFmt(baseCoord)} = <span style="color:var(--total)">−${retFmt(coordination)}/an</span><br><strong>Rente après coordination :</strong> <span style="color:var(--rrq)">${retFmt(pensionAnnual-coordination)}/an</span>`;
+      if (penaltyPct>0) {
+        infoEl.innerHTML = `<strong>Rente de base :</strong> ${rregopAnnees} ans × 2% × ${retFmt(rregopSalaire)} = <strong>${retFmt(rregopBase)}</strong><br><strong>Pénalité :</strong> ${moisAnticipation} mois × 0,5% = <span style="color:var(--total)">−${(penaltyPct*100).toFixed(1)}%</span><br><strong>Critère sans pénalité :</strong> ${critereAtteint}<br>${gapLine}<strong>Rente nette :</strong> <span style="color:var(--pension)">${retFmt(pensionAnnual)}/an</span><br><hr style="border:none;border-top:1px solid var(--border);margin:6px 0;">${coordLine}`;
+      } else {
+        infoEl.innerHTML = `<strong>Rente de base :</strong> ${rregopAnnees} ans × 2% × ${retFmt(rregopSalaire)} = <strong style="color:var(--pension)">${retFmt(rregopBase)}/an</strong><br>${gapLine}<span style="color:var(--psv)">✓ Aucune pénalité</span><br><hr style="border:none;border-top:1px solid var(--border);margin:6px 0;">${coordLine}`;
+      }
+    }
+    window._rregopCoordination = coordination;
+  } else {
+    pensionStartAge = parseInt(document.getElementById('pensionSimpleAge').value);
+    pensionAnnual = parseFloat(document.getElementById('pensionSimpleAmount').value)||0;
+    const indexed = document.getElementById('pensionSimpleIndexed').checked;
+    pensionIdxEffective = indexed ? parseFloat(document.getElementById('pensionSimpleIndexRate').value)/100 : 0;
+    window._rregopCoordination = 0;
+  }
+
+  const rrqAge = parseInt(document.getElementById('rrqAge').value);
+  const rrqAnnual65 = parseFloat(document.getElementById('rrqAmount').value)||0;
+  const rrqIdx = parseFloat(document.getElementById('rrqIndex').value)/100;
+  const psvAge = parseInt(document.getElementById('psvAge').value);
+  const psvAnnual65 = parseFloat(document.getElementById('psvAmount').value)||0;
+  const psvIdx = parseFloat(document.getElementById('psvIndex').value)/100;
+  const rrqStartAnnual = rrqAnnual65*calcRRQFactor(rrqAge);
+  const psvStartAnnual = psvAnnual65*calcPSVFactor(psvAge);
+  const coordination = window._rregopCoordination||0;
+  const internalStartAge = Math.min(pensionStartAge,rrqAge,psvAge);
+  const retirementAge = parseInt(document.getElementById('retirementAge').value)||55;
+  const useMcCheck = document.getElementById('useMcData') && document.getElementById('useMcData').checked && window._lastSimData;
+  const mcStartAgeVal = useMcCheck ? (parseInt(document.getElementById('mcWithdrawalStartAge').value)||55) : retirementAge;
+  // Display starts at mcWithdrawalStartAge when MC active, otherwise retirementAge
+  const displayStartAge = useMcCheck ? mcStartAgeVal : retirementAge;
+  const startAge = displayStartAge; // used for MC yearIdx alignment
+  const rows = [];
+
+  for (let age=displayStartAge; age<=endAge; age++) {
+    const year = birthYear+age;
+    const yP = age>=pensionStartAge ? age-pensionStartAge : -1;
+    const yR = age>=rrqAge ? age-rrqAge : -1;
+    const yS = age>=psvAge ? age-psvAge : -1;
+    const coordApplied = (retPensionMode==='rregop' && age>=65) ? coordination*Math.pow(1+pensionIdxEffective,age-65) : 0;
+    const pensionBrut = yP>=0 ? pensionAnnual*Math.pow(1+pensionIdxEffective,yP) : 0;
+    const pension = Math.max(0,pensionBrut-coordApplied);
+    const rrq = yR>=0 ? rrqStartAnnual*Math.pow(1+rrqIdx,yR) : 0;
+    const psv = yS>=0 ? psvStartAnnual*Math.pow(1+psvIdx,yS) : 0;
+    const totalAnnual = pension+rrq+psv;
+    const totalMonthly = totalAnnual/12;
+    // MC withdrawal integration
+    const useMc = document.getElementById('useMcData') && document.getElementById('useMcData').checked && window._lastSimData;
+    let portfolio = 0;
+    if (useMc) {
+      const mcData = window._lastSimData;
+      const mcStartAge = parseInt(document.getElementById('mcWithdrawalStartAge').value) || 55;
+      const yearIdx = age - mcStartAge; // years elapsed since MC withdrawal start age
+
+      // Only start withdrawals at or after the chosen start age
+      if (age >= mcStartAge) {
+        let portfolioValue = null;
+        if (mcData.isFixed) {
+          portfolioValue = mcData.scenarioPaths && mcData.scenarioPaths[0]
+            ? (mcData.scenarioPaths[0][yearIdx] !== undefined ? mcData.scenarioPaths[0][yearIdx] : null)
+            : null;
+        } else {
+          if (mcScenario === 'worst') {
+            const worstPath = mcData.scenarioPaths && mcData.scenarioPaths[0];
+            portfolioValue = worstPath && worstPath[yearIdx] !== undefined ? worstPath[yearIdx] : null;
+          } else {
+            const bands = mcData.bands;
+            if (bands) {
+              switch (mcScenario) {
+                case 'p10': portfolioValue = bands.p10[yearIdx] !== undefined ? bands.p10[yearIdx] : null; break;
+                case 'p90': portfolioValue = bands.p90[yearIdx] !== undefined ? bands.p90[yearIdx] : null; break;
+                default:    portfolioValue = bands.p50[yearIdx] !== undefined ? bands.p50[yearIdx] : null; break;
+              }
+            }
+          }
+        }
+        // Only pay withdrawal if the portfolio has value at this year
+        if (portfolioValue !== null && portfolioValue > 0 && mcData.W0) {
+          portfolio = mcData.inflAdj
+            ? mcData.W0 * Math.pow(1 + mcData.inflRate, yearIdx)
+            : (mcData.W0 || 0);
+          portfolio = Math.min(portfolio, portfolioValue);
         }
       }
-    };
-  }
-
-  // ── THÈME ──────────────────────────────────────────────────────────────────
-  function toggleTheme() {
-    const isDark = document.documentElement.classList.toggle('dark');
-    document.getElementById('toggle-icon').textContent  = isDark ? '🌙' : '☀️';
-    document.getElementById('toggle-label').textContent = isDark ? 'Sombre' : 'Clair';
-    if (window._chart) updateChartTheme();
-  }
-
-  function getThemeColors() {
-    const dark = document.documentElement.classList.contains('dark');
-    return {
-      accent:      dark ? '#4c8fc9' : '#2563b0',
-      muted:       dark ? '#6b7590' : '#7a829a',
-      border:      dark ? 'rgba(30,37,53,0.6)'    : 'rgba(180,185,200,0.3)',
-      borderLine:  dark ? '#1e2535' : '#dde1ea',
-      grid:        dark ? 'rgba(37,99,176,0.07)' : 'rgba(37,99,176,0.1)',
-      tooltipBg:   dark ? '#1a2030' : '#ffffff',
-      tooltipBorder: dark ? '#1e2535' : '#dde1ea',
-      tooltipBody: dark ? '#e8eaf0' : '#1a1f2e',
-      pointBorder: dark ? '#0b0e13' : '#ffffff',
-      gradStart:   dark ? 'rgba(37,99,176,0.25)' : 'rgba(37,99,176,0.18)',
-    };
-  }
-
-  function updateChartTheme() {
-    const c = getThemeColors();
-    const chart = window._chart;
-    const ctx = document.getElementById('chart').getContext('2d');
-
-    if (currentMode === 'fixe') {
-      const grad = ctx.createLinearGradient(0, 0, 0, 340);
-      grad.addColorStop(0, c.gradStart);
-      grad.addColorStop(1, 'rgba(37,99,176,0.01)');
-      chart.data.datasets[0].borderColor = c.accent;
-      chart.data.datasets[0].backgroundColor = grad;
-      chart.data.datasets[0].pointBackgroundColor = c.accent;
-      chart.data.datasets[0].pointBorderColor = c.pointBorder;
-      document.querySelector('#chart-legend .legend-dot').style.background = c.accent;
     }
+    const totalAnnualWithPortfolio = totalAnnual + portfolio;
+    rows.push({ age, year, pension, rrq, psv, portfolio, totalAnnual: totalAnnualWithPortfolio, totalAnnualBase: totalAnnual, totalMonthly: totalAnnualWithPortfolio/12, pensionStart:age===pensionStartAge, rrqStart:age===rrqAge, psvStart:age===psvAge });
+  }
+  return rows;
+}
 
-    chart.options.plugins.tooltip.backgroundColor = c.tooltipBg;
-    chart.options.plugins.tooltip.borderColor     = c.tooltipBorder;
-    chart.options.plugins.tooltip.titleColor      = c.accent;
-    chart.options.plugins.tooltip.bodyColor       = c.tooltipBody;
-    chart.options.scales.x.ticks.color  = c.muted;
-    chart.options.scales.x.grid.color   = c.border;
-    chart.options.scales.x.border.color = c.borderLine;
-    chart.options.scales.y.ticks.color  = c.accent;
-    chart.options.scales.y.grid.color   = c.grid;
-    chart.options.scales.y.border.color = c.borderLine;
-    chart.update();
+function retRender() {
+  const rows = getData();
+  if (!rows.length) return;
+
+  const useMc = document.getElementById('useMcData') && document.getElementById('useMcData').checked && window._lastSimData;
+  const peakRow = rows.reduce((a,b) => b.totalAnnual>a.totalAnnual?b:a);
+  const pensionLabel = retPensionMode==='rregop' ? 'RREGOP' : 'Pension';
+  const divisor = retAmountMode==='mensuel' ? 12 : 1;
+  const totalLabel = retAmountMode==='mensuel' ? 'Total mensuel' : 'Total annuel';
+  document.getElementById('thPension').textContent = pensionLabel;
+  document.getElementById('thTotal').textContent = totalLabel;
+
+  // Show/hide portfolio column header
+  const thPortfolio = document.getElementById('thPortfolio');
+
+  const cPortfolio = !isDark ? '#7c3aed' : '#a78bfa';
+
+  document.getElementById('legend').innerHTML = `
+    <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--pension)"></div>${pensionLabel}</div>
+    <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--rrq)"></div>RRQ</div>
+    <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--psv)"></div>PSV</div>
+    ${useMc ? `<div class="ret-legend-item"><div class="ret-legend-dot" style="background:${cPortfolio}"></div>Portefeuille Sim.</div>` : ''}
+    <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--total)"></div>Total</div>`;
+
+  const labels = rows.map(r => r.age+' ans');
+  const pensionData = rows.map(r => r.pension/divisor);
+  const rrqData = rows.map(r => r.rrq/divisor);
+  const psvData = rows.map(r => r.psv/divisor);
+  const portfolioData = rows.map(r => (r.portfolio||0)/divisor);
+  const totalData = rows.map(r => r.totalAnnual/divisor);
+
+  if (window._retChartInstance) window._retChartInstance.destroy();
+
+  const ctx = document.getElementById('chart').getContext('2d');
+  const baseDataset = (label, data, color) => ({ label, data, backgroundColor:color+'cc', borderColor:color, borderWidth:1, fill:false, tension:0.4, pointRadius:0, pointHoverRadius:5 });
+
+  const cPension = !isDark ? '#d97706' : '#f59e0b';
+  const cRRQ = !isDark ? '#2563eb' : '#3b82f6';
+  const cPSV = !isDark ? '#059669' : '#10b981';
+  const cTotal = !isDark ? '#ea580c' : '#f97316';
+  const cGrid = !isDark ? '#d1dce8' : '#1e2d45';
+  const cTick = !isDark ? '#64748b' : '#475569';
+  const cTTbg = !isDark ? '#ffffff' : '#111827';
+  const cTTbord = !isDark ? '#d1dce8' : '#1e2d45';
+  const cTTtitle = !isDark ? '#0f172a' : '#e2e8f0';
+  const cTTbody = !isDark ? '#64748b' : '#94a3b8';
+
+  const datasets = [
+    baseDataset(pensionLabel, pensionData, cPension),
+    baseDataset('RRQ', rrqData, cRRQ),
+    baseDataset('PSV', psvData, cPSV),
+  ];
+
+  if (useMc) {
+    datasets.push(baseDataset('Portefeuille Sim.', portfolioData, cPortfolio));
   }
 
-  // Enter key
-  document.addEventListener('keydown', e => { if (e.key === 'Enter') calculer(); });
+  datasets.push({ label:'Total', data:totalData, backgroundColor:'transparent', borderColor:cTotal, borderWidth:2, borderDash:[5,3], type:'line', fill:false, tension:0.4, pointRadius:2, pointHoverRadius:5, yAxisID:'y' });
 
-  // Valeurs par défaut
-  document.getElementById('valeur').value  = 450000;
-  document.getElementById('taux').value    = 5;
-  document.getElementById('retrait').value = 20000;
-  document.getElementById('annee').value   = 55;
-  document.getElementById('nb').value      = 40;
+  window._retChartInstance = new Chart(ctx, {
+    type:'bar',
+    data: { labels, datasets },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      stacked:true,
+      plugins: {
+        legend:{ display:false },
+        tooltip: { backgroundColor:cTTbg, borderColor:cTTbord, borderWidth:1, titleColor:cTTtitle, bodyColor:cTTbody, callbacks:{ label:ctx => ` ${ctx.dataset.label}: ${retFmt(ctx.raw)}` } }
+      },
+      scales: {
+        x:{ stacked:true, grid:{color:cGrid}, ticks:{color:cTick,font:{family:'DM Mono',size:11},maxTicksLimit:15} },
+        y:{ stacked:true, grid:{color:cGrid}, ticks:{color:cTick,font:{family:'DM Mono',size:11},callback:v=>retFmtK(v)+' $'} }
+      }
+    }
+  });
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = rows.map(r => {
+    const badges = [
+      r.pensionStart ? `<span class="age-badge start" style="background:color-mix(in srgb, var(--pension) 35%, transparent);color:var(--pension)">▶ ${pensionLabel}</span>` : '',
+      r.rrqStart ? '<span class="age-badge start" style="background:color-mix(in srgb, var(--rrq) 15%, transparent);color:var(--rrq)">▶ RRQ</span>' : '',
+      r.psvStart ? '<span class="age-badge start" style="background:color-mix(in srgb, var(--psv) 15%, transparent);color:var(--psv)">▶ PSV</span>' : '',
+    ].filter(Boolean).join(' ');
+    const portfolioCell = useMc
+      ? `<td class="portfolio-val">${r.portfolio>0?retFmt(r.portfolio/divisor):'—'}</td>`
+      : '';
+    return `<tr>
+      <td><strong>${r.age}</strong> ${badges}</td>
+      <td>${r.year}</td>
+      <td class="pension-val">${r.pension>0?retFmt(r.pension/divisor):'—'}</td>
+      <td class="rrq-val">${r.rrq>0?retFmt(r.rrq/divisor):'—'}</td>
+      <td class="psv-val">${r.psv>0?retFmt(r.psv/divisor):'—'}</td>
+      ${portfolioCell}
+      <td class="total-val">${retFmt(r.totalAnnual/divisor)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Listen to retraite inputs
+document.querySelectorAll('#page-retraite input, #page-retraite select').forEach(el => {
+  el.addEventListener('input', retRender);
+  el.addEventListener('change', retRender);
+});
+
+document.getElementById('pensionSimpleIndexed').addEventListener('change', function() {
+  document.getElementById('pensionSimpleIndexLabel').style.display = this.checked ? '' : 'none';
+  retRender();
+});
+
+// Init
+retRender();
 </script>
 </body>
 </html>
