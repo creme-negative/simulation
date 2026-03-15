@@ -394,6 +394,61 @@
     transition: opacity 0.2s;
   }
 
+  /* Save/load bottom bar */
+  .nav-bottom-actions {
+    margin-top: auto;
+    padding: 12px 10px;
+    border-top: 1px solid var(--nav-border-color);
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .left-nav.collapsed .nav-bottom-actions {
+    flex-direction: column;
+    padding: 8px 6px;
+    gap: 4px;
+  }
+
+  .nav-bottom-btn {
+    flex: 1;
+    padding: 8px;
+    background: none;
+    border: 1px solid var(--nav-border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    color: rgba(255,255,255,0.6);
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    position: relative;
+    line-height: 1;
+  }
+
+  .nav-bottom-btn:hover {
+    background: var(--nav-hover);
+    color: rgba(255,255,255,0.95);
+    border-color: rgba(255,255,255,0.3);
+  }
+
+  .nav-bottom-btn::after { display: none; }
+
+  #nav-tooltip {
+    position: fixed;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 11px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 9999;
+  }
+  #nav-tooltip.visible { opacity: 1; }
+
   /* Tooltip for collapsed icons */
   .nav-item[data-tooltip] { position: relative; }
   .left-nav.collapsed .nav-item[data-tooltip]:hover::after {
@@ -1151,10 +1206,17 @@
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   @media (max-width: 900px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
 
+  .ret-stats-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 900px) { .ret-stats-cards { grid-template-columns: repeat(2, 1fr); } }
+
   .ret-stat-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    padding: 20px; position: relative; overflow: hidden;
+    padding: 12px 16px; position: relative; overflow: hidden;
     border-radius: 8px;
     transition: background 0.25s, border-color 0.25s;
   }
@@ -1165,7 +1227,7 @@
   .ret-stat-card.psv::after { background: var(--psv); }
   .ret-stat-card.total::after { background: var(--total); }
 
-  .ret-stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .ret-stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text); font-weight: 700; margin-bottom: 8px; }
   .ret-stat-value { font-family: 'DM Serif Display', serif; font-size: 26px; font-weight: 400; }
   .ret-stat-value.pension { color: var(--pension); }
   .ret-stat-value.rrq { color: var(--rrq); }
@@ -1289,11 +1351,13 @@
     .left-nav { display: none; }
     .page-content { margin-left: 0 !important; }
   }
+
 </style>
 </head>
 <body>
 
 <div id="tooltip-box"></div>
+<div id="nav-tooltip"></div>
 
 <!-- ===================== HEADER ===================== -->
 <header>
@@ -1339,6 +1403,11 @@
         <small>Retraite & rentes</small>
       </span>
     </button>
+    <div class="nav-bottom-actions">
+      <button class="nav-bottom-btn" onclick="saveParams()" data-tooltip="Sauvegarder les paramètres">💾</button>
+      <button class="nav-bottom-btn" onclick="document.getElementById('loadFileInput').click()" data-tooltip="Charger des paramètres">📂</button>
+      <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadParams(event)">
+    </div>
   </nav>
 
   <!-- PAGE CONTENT -->
@@ -1767,6 +1836,9 @@
         <!-- MAIN CONTENT -->
         <div class="ret-main">
 
+          <!-- STATS CARDS -->
+          <div id="retStatsRow" class="ret-stats-cards" style="display:none;"></div>
+
           <!-- CHART -->
           <div class="chart-container">
             <div class="chart-header">
@@ -1830,6 +1902,127 @@ function showPlanificateurUpdatedBadge() {
   // Remove badge when user visits the planificateur page
   navBtn.addEventListener('click', () => badge.classList.remove('visible'), { once: true });
 }
+
+// ===================== SAVE / LOAD PARAMS =====================
+function collectParams() {
+  const ids = [
+    // Simulateur
+    'startAgeSimu','portfolioValue','annualWithdrawal','years',
+    'inflationCheck','inflationRate','paliersEnabled',
+    'histIndex','histMethod','fixedRate','numSims',
+    // Planificateur — Profil
+    'birthYear','retirementAge','endAge','globalIndexation',
+    // Planificateur — Pension
+    'pensionEnabled','pensionAge','rregopRenteAge','rregopSalaire',
+    'rregopAnnees','rregopMGA','pensionIndex',
+    'pensionSimpleAge','pensionSimpleAmount','pensionSimpleIndexed','pensionSimpleIndexRate',
+    // Planificateur — RRQ
+    'rrqEnabled','rrqAge','rrqAmount','rrqIndex',
+    // Planificateur — PSV
+    'psvEnabled','psvAge','psvAmount','psvIndex',
+    // Planificateur — MC link
+    'mcWithdrawalStartAge',
+  ];
+  const data = { _version: 1, fields: {}, paliers: null, pensionMode: retPensionMode, simMode };
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    data.fields[id] = el.type === 'checkbox' ? el.checked : el.value;
+  });
+  if (getPaliersEnabled()) data.paliers = JSON.parse(JSON.stringify(paliers));
+  return data;
+}
+
+function saveParams() {
+  const data = collectParams();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'planification-retraite.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadParams(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.fields) { alert('Fichier invalide.'); return; }
+
+      // Restore mode toggles first
+      if (data.pensionMode) setPensionMode(data.pensionMode);
+      if (data.simMode) setSimMode(data.simMode);
+
+      // Restore field values
+      Object.entries(data.fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') {
+          el.checked = val === true || val === 'true';
+        } else {
+          el.value = val;
+        }
+      });
+
+      // Restore paliers
+      if (data.paliers) {
+        paliers = data.paliers;
+        const cb = document.getElementById('paliersEnabled');
+        if (cb) cb.checked = true;
+        const sec = document.getElementById('paliersSection');
+        if (sec) sec.style.display = 'block';
+        renderPaliers();
+      } else {
+        paliers = [];
+        const cb = document.getElementById('paliersEnabled');
+        if (cb) cb.checked = false;
+        const sec = document.getElementById('paliersSection');
+        if (sec) sec.style.display = 'none';
+      }
+
+      // Trigger dependent UI updates
+      onGlobalIndexationChange();
+      onPensionEnabledChange();
+      onRrqEnabledChange();
+      onPsvEnabledChange();
+      retRender();
+
+      // Reset file input so same file can be reloaded
+      event.target.value = '';
+    } catch(err) {
+      alert('Erreur lors du chargement : ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ===================== NAV BOTTOM BUTTON TOOLTIPS =====================
+(function() {
+  const tt = document.getElementById('nav-tooltip');
+  document.querySelectorAll('.nav-bottom-btn').forEach(btn => {
+    btn.addEventListener('mouseenter', () => {
+      const text = btn.getAttribute('data-tooltip');
+      if (!text) return;
+      tt.textContent = text;
+      tt.classList.add('visible');
+      const r = btn.getBoundingClientRect();
+      const ttW = tt.offsetWidth;
+      const ttH = tt.offsetHeight;
+      const margin = 8;
+      let left = r.left + r.width / 2 - ttW / 2;
+      // Clamp within viewport
+      left = Math.max(margin, Math.min(left, window.innerWidth - ttW - margin));
+      tt.style.left = left + 'px';
+      tt.style.top = (r.top - ttH - 8) + 'px';
+    });
+    btn.addEventListener('mouseleave', () => tt.classList.remove('visible'));
+    btn.addEventListener('click', () => tt.classList.remove('visible'));
+  });
+})();
 
 // ===================== NAVIGATION =====================
 function showPage(name) {
@@ -2698,6 +2891,74 @@ function retRender() {
 
   const useMc = document.getElementById('useMcData') && document.getElementById('useMcData').checked && window._lastSimData;
   const peakRow = rows.reduce((a,b) => b.totalAnnual>a.totalAnnual?b:a);
+
+  // Stats cards row
+  const cPortfolio = !isDark ? '#7c3aed' : '#a78bfa';
+  const statsRowEl = document.getElementById('retStatsRow');
+  if (statsRowEl) {
+    const pensionEnabled2 = document.getElementById('pensionEnabled') ? document.getElementById('pensionEnabled').checked : true;
+    const rrqEnabled2 = document.getElementById('rrqEnabled') ? document.getElementById('rrqEnabled').checked : true;
+    const psvEnabled2 = document.getElementById('psvEnabled') ? document.getElementById('psvEnabled').checked : true;
+    const pensionRow = rows.find(r => r.pensionStart);
+    const rrqRow = rows.find(r => r.rrqStart);
+    const psvRow = rows.find(r => r.psvStart);
+    const pensionLabel2 = retPensionMode==='rregop' ? 'RREGOP' : 'Pension';
+
+    const makeCard = (label, age, amount, year, color) => `
+      <div class="ret-stat-card" style="border-bottom:3px solid ${color};">
+        <div class="ret-stat-label">${label}</div>
+        <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:2px;">
+          <div class="ret-stat-value" style="color:${color}; font-size:18px;">${age}</div>
+          ${amount ? `<div style="font-family:'DM Mono',monospace; font-size:11px; color:${color}; opacity:0.8;">${amount}</div>` : ''}
+        </div>
+        <div class="ret-stat-sub">${year}</div>
+      </div>`;
+
+    const fmtAge = (row, enabled) => enabled && row ? `${row.age} ans` : '<span style="opacity:0.4">—</span>';
+    const fmtAmt = (row, enabled, field) => enabled && row && row[field] > 0 ? retFmt(row[field]) + '/an' : '';
+    const fmtYear = (row, enabled) => enabled && row ? `${row.year}` : '';
+
+    let cards = '';
+    cards += makeCard(pensionLabel2, fmtAge(pensionRow, pensionEnabled2), fmtAmt(pensionRow, pensionEnabled2, 'pension'), fmtYear(pensionRow, pensionEnabled2), 'var(--pension)');
+    cards += makeCard('RRQ', fmtAge(rrqRow, rrqEnabled2), fmtAmt(rrqRow, rrqEnabled2, 'rrq'), fmtYear(rrqRow, rrqEnabled2), 'var(--rrq)');
+    cards += makeCard('PSV', fmtAge(psvRow, psvEnabled2), fmtAmt(psvRow, psvEnabled2, 'psv'), fmtYear(psvRow, psvEnabled2), 'var(--psv)');
+
+    if (useMc && window._lastSimData) {
+      const mcData = window._lastSimData;
+      const mcStartAge = parseInt(document.getElementById('mcWithdrawalStartAge').value) || 55;
+      const endAgeVal = parseInt(document.getElementById('endAge').value) || 95;
+      const finalYearIdx = endAgeVal - mcStartAge;
+      let finalBalance = null;
+      if (mcData.isFixed) {
+        const path = mcData.scenarioPaths && mcData.scenarioPaths[0];
+        finalBalance = path && path[finalYearIdx] !== undefined ? path[finalYearIdx] : null;
+      } else {
+        if (mcScenario === 'worst') {
+          const path = mcData.scenarioPaths && mcData.scenarioPaths[0];
+          finalBalance = path && path[finalYearIdx] !== undefined ? path[finalYearIdx] : null;
+        } else {
+          const bands = mcData.bands;
+          if (bands) {
+            switch (mcScenario) {
+              case 'p10': finalBalance = bands.p10[finalYearIdx] !== undefined ? bands.p10[finalYearIdx] : null; break;
+              case 'p90': finalBalance = bands.p90[finalYearIdx] !== undefined ? bands.p90[finalYearIdx] : null; break;
+              default:    finalBalance = bands.p50[finalYearIdx] !== undefined ? bands.p50[finalYearIdx] : null; break;
+            }
+          }
+        }
+      }
+      const isExhausted = finalBalance !== null && finalBalance <= 0;
+      const balFmt = finalBalance === null ? '—' : isExhausted ? 'Épuisé' : retFmt(finalBalance);
+      const balColor = isExhausted ? 'var(--red)' : 'var(--green)';
+      const scenLabel = mcScenario==='worst' ? 'Pire scénario' : mcScenario==='p10' ? 'P10' : mcScenario==='p90' ? 'P90' : mcScenario==='fixed' ? 'Taux fixe' : 'P50 médiane';
+      cards += makeCard(`Portefeuille à ${endAgeVal} ans`, `<span style="color:${balColor}">${balFmt}</span>`, '', scenLabel, cPortfolio);
+    } else {
+      cards += makeCard('Portefeuille', '<span style="opacity:0.4">—</span>', '', 'Simulateur non lié', cPortfolio);
+    }
+
+    statsRowEl.style.display = '';
+    statsRowEl.innerHTML = cards;
+  }
   const pensionLabel = retPensionMode==='rregop' ? 'RREGOP' : 'Pension';
   const divisor = retAmountMode==='mensuel' ? 12 : 1;
   const totalLabel = retAmountMode==='mensuel' ? 'Total mensuel' : 'Total annuel';
@@ -2710,8 +2971,6 @@ function retRender() {
     thPortfolio.style.display = useMc ? '' : 'none';
     thPortfolio.textContent = 'Retraits';
   }
-
-  const cPortfolio = !isDark ? '#7c3aed' : '#a78bfa';
 
   document.getElementById('legend').innerHTML = `
     <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--pension)"></div>${pensionLabel}</div>
