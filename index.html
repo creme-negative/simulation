@@ -439,18 +439,101 @@
   /* ===================== MONTE CARLO PAGE ===================== */
   .mc-container {
     width: 100%;
-    padding: 28px 32px;
+    padding: 0;
+    display: flex;
+    min-height: calc(100vh - var(--header-h));
   }
 
   .mc-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 32px;
-    align-items: start;
+    display: contents;
+  }
+
+  /* Simulateur sidebar — même style que Planificateur */
+  .sim-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 32px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--surface);
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .sim-sidebar .section-title { margin-top: 28px; }
+  .sim-sidebar > .section-title:first-of-type { margin-top: 0; }
+
+  /* Collapsible sections — shared by sim-sidebar and ret-sidebar */
+  .sim-section-title {
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--muted); margin-top: 28px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none;
+    transition: color 0.15s;
+  }
+  .sim-section-title:hover { color: var(--text); }
+  .sim-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .sim-section-title .sim-chevron {
+    font-size: 9px; color: var(--subtle);
+    transition: transform 0.22s ease, color 0.15s;
+    flex-shrink: 0; order: -1;
+  }
+  .sim-section-title:hover .sim-chevron { color: var(--muted); }
+  .sim-section-title.collapsed .sim-chevron { transform: rotate(-90deg); }
+  .sim-section-title.collapsed + .sim-section-body { display: none; }
+  .sim-section-title:first-of-type { margin-top: 0; }
+  #opts-historique > .sim-section-title,
+  #opts-fixe > .sim-section-title,
+  #numSimsField > .sim-section-title { margin-top: 0; }
+
+  .sim-sidebar .param-group::before {
+    background: var(--pg-color, var(--muted));
+  }
+
+  .sim-sidebar .ret-sidebar input[type="number"],
+  .sim-sidebar .ret-sidebar select,
+  .sim-sidebar input[type="number"],
+  .sim-sidebar select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    width: 100%;
+    outline: none;
+    border-radius: 6px;
+    transition: border-color 0.2s, background 0.25s, color 0.25s;
+    -moz-appearance: textfield;
+    box-shadow: none;
+  }
+
+  .sim-sidebar input[type="number"]::-webkit-outer-spin-button,
+  .sim-sidebar input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .sim-sidebar input[type="number"]:focus,
+  .sim-sidebar select:focus {
+    border-color: var(--accent);
+    box-shadow: none;
+  }
+
+  .sim-sidebar .input-with-unit input { padding-right: 40px; }
+
+  .sim-sidebar .mode-toggle-row { margin-bottom: 0; }
+
+  aside.sim-sidebar + main {
+    flex: 1;
+    min-width: 0;
+    padding: 32px 40px;
+    overflow-y: auto;
   }
 
   @media (max-width: 1000px) {
-    .mc-layout { grid-template-columns: 1fr; }
+    .mc-container { flex-direction: column; }
+    .sim-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+    aside.sim-sidebar + main { padding: 24px; }
   }
 
   /* Panel */
@@ -663,6 +746,84 @@
   :root.dark .retrait-btn.active { background: rgba(37,99,176,0.1); }
   .retrait-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
 
+  /* ---- Paliers de retrait ---- */
+  .paliers-toggle-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px; margin-bottom: 0;
+  }
+  .paliers-toggle-label {
+    font-size: 11px; font-weight: 500; color: var(--muted);
+    cursor: pointer; user-select: none; flex: 1;
+  }
+  .paliers-toggle-switch {
+    position: relative; width: 32px; height: 18px; flex-shrink: 0;
+  }
+  .paliers-toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .paliers-slider {
+    position: absolute; inset: 0; background: var(--border);
+    border-radius: 99px; cursor: pointer; transition: background 0.2s;
+  }
+  .paliers-slider::before {
+    content: ''; position: absolute;
+    width: 12px; height: 12px; top: 3px; left: 3px;
+    background: #fff; border-radius: 50%; transition: transform 0.2s;
+  }
+  .paliers-toggle-switch input:checked + .paliers-slider { background: var(--accent); }
+  .paliers-toggle-switch input:checked + .paliers-slider::before { transform: translateX(14px); }
+
+  .paliers-section {
+    margin-top: 10px;
+    padding: 10px;
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+    border-radius: 10px;
+  }
+
+  .palier-row {
+    display: grid;
+    grid-template-columns: 2fr 1.6fr auto;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .palier-row:last-child { margin-bottom: 0; }
+  .palier-label {
+    font-size: 10px; font-weight: 600; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    grid-column: 1 / -1;
+    margin-bottom: 2px;
+  }
+  .palier-input-wrap {
+    position: relative; display: flex; align-items: center;
+  }
+  .palier-input-wrap input {
+    width: 100%; padding: 5px 26px 5px 6px;
+    border: 1.5px solid var(--border); border-radius: 7px;
+    background: var(--surface); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .palier-input-wrap input:focus { border-color: var(--accent); }
+  .palier-input-wrap .pu { position: absolute; right: 6px; font-size: 10px; color: var(--muted); pointer-events: none; }
+  .palier-del-btn {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .palier-del-btn:hover { border-color: var(--red); color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); }
+  .palier-add-btn {
+    width: 100%; margin-top: 8px; padding: 5px 0;
+    border: 1.5px dashed color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 8px; background: transparent;
+    color: var(--accent); font-size: 11px; font-weight: 500;
+    font-family: 'Instrument Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .palier-add-btn:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); border-style: solid; }
+  .palier-divider { height: 1px; background: color-mix(in srgb, var(--accent) 15%, transparent); margin: 6px 0; }
+
   .mode-toggle-row { display: flex; gap: 8px; margin-bottom: 16px; }
 
   .mode-btn {
@@ -749,7 +910,7 @@
   .pct-table td:last-child { text-align: right; }
   .pct-badge { display: inline-block; width: 42px; height: 5px; border-radius: 2px; vertical-align: middle; margin-right: 8px; }
 
-  .mc-footer { margin-top: 64px; padding: 24px 0; border-top: 1px solid var(--border); text-align: center; }
+  .mc-footer { margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); text-align: center; }
   .mc-footer p { font-size: 0.72rem; color: var(--subtle); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
 
   #tooltip-box {
@@ -780,8 +941,16 @@
   .sc-tab {
     padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
     background: transparent; font-family: 'DM Mono', monospace; font-size: 0.72rem;
-    color: var(--muted); cursor: pointer; transition: all 0.15s; letter-spacing: 0.05em;
+    color: #0a0f1e; cursor: pointer; transition: all 0.15s; letter-spacing: 0.05em;
+    display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.3;
   }
+
+  :root.dark .sc-tab { color: #f1f5f9; }
+
+  .sc-tab-cagr {
+    font-size: 0.62rem; opacity: 0.75; letter-spacing: 0; font-weight: 400;
+  }
+  .sc-tab.active .sc-tab-cagr { opacity: 0.9; }
 
   .sc-tab:hover { border-color: var(--sc-color, var(--accent)); color: var(--text); }
   .sc-tab.active { background: var(--sc-color, var(--accent)); border-color: var(--sc-color, var(--accent)); color: #fff; font-weight: 500; }
@@ -836,15 +1005,6 @@
     letter-spacing: 0;
     color: var(--text);
     width: 100%;
-  }
-
-  .mc-link-toggle input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
-    accent-color: var(--accent);
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-right: 10px;
   }
 
   .mc-link-label {
@@ -926,7 +1086,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 0;
     background: var(--surface);
     transition: background 0.3s, border-color 0.3s;
   }
@@ -951,6 +1111,7 @@
   .param-group.rrq::before { background: var(--rrq); }
   .param-group.psv::before { background: var(--psv); }
   .param-group.general::before { background: var(--muted); }
+  .param-group.simulateur::before { background: var(--accent); }
 
   .param-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; }
   .param-label strong { font-weight: 500; }
@@ -1200,109 +1361,150 @@
         <div class="mc-layout">
 
           <!-- LEFT: Controls -->
-          <aside>
-            <div class="panel params-panel">
-              <div class="params-label">⚙️ Paramètres</div>
-              <div class="panel-body">
+          <aside class="sim-sidebar">
 
-                <div class="mode-toggle-row">
-                  <button class="mode-btn active" id="btn-historique" onclick="setSimMode('historique')">🎲 Monte Carlo</button>
-                  <button class="mode-btn" id="btn-fixe" onclick="setSimMode('fixe')">📈 Taux fixe</button>
-                </div>
-
-                <div class="field">
-                  <label>Valeur initiale du portefeuille <span class="tip" data-tip="Montant total de votre portefeuille au début de la simulation.">ⓘ</span></label>
-                  <div class="input-wrap has-prefix">
-                    <span class="input-prefix">$</span>
-                    <input type="number" id="portfolioValue" value="450000" min="0" step="1000">
-                  </div>
-                </div>
-
-                <div class="field">
-                  <label>Retrait annuel <span class="tip" data-tip="Montant ou pourcentage retiré chaque année. En mode %, le retrait est recalculé chaque année selon la valeur du portefeuille.">ⓘ</span></label>
-                  <div class="retrait-toggle-row">
-                    <button class="retrait-btn active" id="btn-retrait-montant" onclick="setRetraitMode('montant')">$ Montant</button>
-                    <button class="retrait-btn" id="btn-retrait-pct" onclick="setRetraitMode('pct')">% Taux</button>
-                  </div>
-                  <div id="retrait-montant-field">
-                    <div class="input-wrap has-prefix">
-                      <span class="input-prefix">$</span>
-                      <input type="number" id="annualWithdrawal" value="20000" min="0" step="500">
-                    </div>
-                  </div>
-                  <div id="retrait-pct-field" style="display:none">
-                    <div class="input-wrap has-suffix">
-                      <input type="number" id="withdrawalPct" value="4" min="0" max="100" step="0.1">
-                      <span class="input-suffix">%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="inflation-box" id="inflationBox">
-                  <div class="inflation-inner" id="inflationRow">
-                    <label class="checkbox-field" for="inflationCheck" style="border:none;padding:0;margin:0;background:transparent;display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-                      <input type="checkbox" id="inflationCheck" checked>
-                      <span class="cb-label">Taux d'inflation <span class="tip" data-tip="Si activé, le montant du retrait augmente chaque année selon le taux d'inflation choisi, pour maintenir le même pouvoir d'achat.">ⓘ</span></span>
-                    </label>
-                    <div class="input-wrap has-suffix" style="max-width:110px;">
-                      <input type="number" id="inflationRate" value="2" min="0" max="20" step="0.1">
-                      <span class="input-suffix">%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="field">
-                  <label>Horizon de projection <span class="tip" data-tip="Nombre d'années sur lesquelles la simulation est effectuée. Correspond généralement à la durée estimée de votre retraite.">ⓘ</span></label>
-                  <div class="input-wrap has-suffix">
-                    <input type="number" id="years" value="40" min="5" max="60" step="1">
-                    <span class="input-suffix">ans</span>
-                  </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div id="opts-historique">
-                  <div class="field">
-                    <label>Indice <span class="tip" data-tip="Données annuelles réelles ajustées pour dividendes. S&P 500 depuis 1928, TSX depuis 1956, Portefeuilles 60/40 et 80/20 depuis 1928.">ⓘ</span></label>
-                    <select id="histIndex">
-                      <option value="p6040" selected>Portefeuille 60/40 (1928–2024)</option>
-                      <option value="p8020">Portefeuille 80/20 (1928–2024)</option>
-                      <option value="sp500">S&amp;P 500 (1928–2024)</option>
-                      <option value="tsx">TSX (1956–2024)</option>
-                    </select>
-                  </div>
-                  <div class="field">
-                    <label>Méthode <span class="tip" data-tip="Bootstrap : chaque année est tirée indépendamment au hasard. Séquences : blocs de 5 ans consécutifs pour préserver les cycles économiques.">ⓘ</span></label>
-                    <select id="histMethod">
-                      <option value="bootstrap">Bootstrap — années indépendantes</option>
-                      <option value="block">Séquences consécutives (blocs 5 ans)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div id="opts-fixe" style="display:none">
-                  <div class="field">
-                    <label>Taux de rendement annuel <span class="tip" data-tip="Rendement annuel fixe appliqué à chaque année de la simulation.">ⓘ</span></label>
-                    <div class="input-wrap has-suffix">
-                      <input type="number" id="fixedRate" value="5" min="-20" max="50" step="0.1">
-                      <span class="input-suffix">%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div id="numSimsField">
-                  <div class="field">
-                    <label>Nombre de simulations <span class="tip" data-tip="Nombre de trajectoires aléatoires générées. Plus ce nombre est élevé, plus les résultats sont précis.">ⓘ</span></label>
-                    <input type="number" id="numSims" value="1000" min="100" max="10000" step="100">
-                  </div>
-                </div>
-
-                <button class="btn-run" id="runBtn" onclick="runSimulation()">
-                  Lancer la simulation
-                </button>
-
-              </div>
+            <!-- Mode toggle -->
+            <div class="sim-section-title" style="cursor:default;margin-top:0;">Mode de simulation</div>
+            <div class="mode-toggle-row" style="margin-bottom:0;">
+              <button class="mode-btn active" id="btn-historique" onclick="setSimMode('historique')">🎲 Monte Carlo</button>
+              <button class="mode-btn" id="btn-fixe" onclick="setSimMode('fixe')">📈 Taux fixe</button>
             </div>
+
+            <!-- Portefeuille -->
+            <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Portefeuille</div>
+            <div class="sim-section-body"><div class="param-group general">
+                <label class="ret-label">
+                  <span class="label-text">Âge au début <span class="tip" data-tip="Votre âge au moment où commence la simulation. Utilisé pour définir des paliers de retrait par âge.">ⓘ</span></span>
+                  <div class="input-with-unit">
+                    <input type="number" id="startAgeSimu" value="55" min="30" max="90" step="1" oninput="if(getPaliersEnabled()) renderPaliers()">
+                    <span class="unit">ans</span>
+                  </div>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">Valeur initiale <span class="tip" data-tip="Montant total de votre portefeuille au début de la simulation.">ⓘ</span></span>
+                  <div class="input-with-unit">
+                    <input type="number" id="portfolioValue" value="450000" min="0" step="1000">
+                    <span class="unit">$</span>
+                  </div>
+                </label>
+                <label class="ret-label">
+                  <span class="label-text">Horizon de projection <span class="tip" data-tip="Nombre d'années sur lesquelles la simulation est effectuée.">ⓘ</span></span>
+                  <div class="input-with-unit">
+                    <input type="number" id="years" value="40" min="5" max="60" step="1">
+                    <span class="unit">ans</span>
+                  </div>
+                </label>
+              </div></div>
+
+            <!-- Retraits -->
+            <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Retraits</div>
+            <div class="sim-section-body"><div class="param-group" style="--pg-color:var(--orange);">
+                <div class="param-label" style="margin-bottom:12px;">
+                  <span style="font-size:12px;font-weight:500;">Retrait annuel <span class="tip" data-tip="Montant ou pourcentage retiré chaque année. En mode %, le retrait est recalculé chaque année selon la valeur du portefeuille.">ⓘ</span></span>
+                </div>
+                <div class="retrait-toggle-row">
+                  <button class="retrait-btn active" id="btn-retrait-montant" onclick="setRetraitMode('montant')">$ Montant</button>
+                  <button class="retrait-btn" id="btn-retrait-pct" onclick="setRetraitMode('pct')">% Taux</button>
+                </div>
+                <div id="retrait-montant-field">
+                  <div class="input-with-unit">
+                    <input type="number" id="annualWithdrawal" value="20000" min="0" step="500">
+                    <span class="unit">$/an</span>
+                  </div>
+                </div>
+                <div id="retrait-pct-field" style="display:none">
+                  <div class="input-with-unit">
+                    <input type="number" id="withdrawalPct" value="4" min="0" max="100" step="0.1">
+                    <span class="unit">%</span>
+                  </div>
+                </div>
+
+                <!-- Paliers toggle -->
+                <div class="paliers-toggle-row" id="paliersToggleRow" style="margin-top:12px;">
+                  <label class="paliers-toggle-label" for="paliersEnabled">Paliers par âge <span class="tip" data-tip="Définissez différents montants de retrait selon votre âge. Ex : 50 000$/an avant 60 ans, puis 20 000$/an après.">ⓘ</span></label>
+                  <label class="paliers-toggle-switch">
+                    <input type="checkbox" id="paliersEnabled" onchange="togglePaliers()">
+                    <span class="paliers-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Paliers section -->
+                <div id="paliersSection" style="display:none; margin-top:10px;">
+                  <div class="paliers-section">
+                    <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Paliers de retrait</div>
+                    <div id="paliersList"></div>
+                    <button class="palier-add-btn" onclick="addPalier()">+ Ajouter un palier</button>
+                  </div>
+                </div>
+
+                <!-- Inflation -->
+                <div id="inflationBox" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+                  <label class="ret-label" style="margin-bottom:0;">
+                    <span class="label-text" style="display:flex;align-items:center;justify-content:space-between;">
+                      <span>Indexation inflation <span class="tip" data-tip="Si activé, le montant du retrait augmente chaque année selon le taux d'inflation choisi, pour maintenir le même pouvoir d'achat.">ⓘ</span></span>
+                      <label class="paliers-toggle-switch">
+                        <input type="checkbox" id="inflationCheck" checked>
+                        <span class="paliers-slider"></span>
+                      </label>
+                    </span>
+                    <div class="input-with-unit">
+                      <input type="number" id="inflationRate" value="2" min="0" max="20" step="0.1">
+                      <span class="unit">%/an</span>
+                    </div>
+                  </label>
+                </div>
+              </div></div>
+
+            <!-- Méthode -->
+            <div id="opts-historique" style="margin-top:28px;">
+            <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Données historiques</div>
+            <div class="sim-section-body"><div class="param-group" style="--pg-color:var(--accent2);">
+                <label class="ret-label">
+                  <span class="label-text">Indice <span class="tip" data-tip="Données annuelles réelles ajustées pour dividendes. S&P 500 depuis 1928, TSX depuis 1956, Portefeuilles 60/40 et 80/20 depuis 1928.">ⓘ</span></span>
+                  <select id="histIndex">
+                    <option value="p6040" selected>Portefeuille 60/40 (1928–2024)</option>
+                    <option value="p8020">Portefeuille 80/20 (1928–2024)</option>
+                    <option value="sp500">S&amp;P 500 (1928–2024)</option>
+                    <option value="tsx">TSX (1956–2024)</option>
+                  </select>
+                </label>
+                <label class="ret-label" style="margin-bottom:0;">
+                  <span class="label-text">Méthode <span class="tip" data-tip="Bootstrap : chaque année est tirée indépendamment au hasard. Séquences : blocs de 5 ans consécutifs pour préserver les cycles économiques.">ⓘ</span></span>
+                  <select id="histMethod">
+                    <option value="bootstrap">Bootstrap — années indépendantes</option>
+                    <option value="block">Séquences consécutives (blocs 5 ans)</option>
+                  </select>
+                </label>
+              </div></div>
+            </div>
+
+            <div id="opts-fixe" style="display:none; margin-top:28px;">
+            <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Taux fixe</div>
+            <div class="sim-section-body"><div class="param-group" style="--pg-color:var(--accent);">
+                <label class="ret-label" style="margin-bottom:0;">
+                  <span class="label-text">Taux de rendement annuel <span class="tip" data-tip="Rendement annuel fixe appliqué à chaque année de la simulation.">ⓘ</span></span>
+                  <div class="input-with-unit">
+                    <input type="number" id="fixedRate" value="5" min="-20" max="50" step="0.1">
+                    <span class="unit">%</span>
+                  </div>
+                </label>
+              </div></div>
+            </div>
+
+            <div id="numSimsField" style="margin-top:28px;">
+            <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Simulation</div>
+            <div class="sim-section-body"><div class="param-group general">
+                <label class="ret-label" style="margin-bottom:0;">
+                  <span class="label-text">Nombre de simulations <span class="tip" data-tip="Nombre de trajectoires aléatoires générées. Plus ce nombre est élevé, plus les résultats sont précis.">ⓘ</span></span>
+                  <input type="number" id="numSims" value="1000" min="100" max="10000" step="100">
+                </label>
+              </div></div>
+            </div>
+
+            <button class="btn-run" id="runBtn" onclick="runSimulation()">
+              Lancer la simulation
+            </button>
+
           </aside>
 
           <!-- RIGHT: Results -->
@@ -1316,12 +1518,12 @@
                 </div>
               </div>
             </div>
+            <div class="mc-footer">
+              <p>À titre informatif seulement — Les simulations sont basées sur des rendements historiques réels et ne constituent pas des conseils financiers.</p>
+            </div>
           </main>
         </div>
 
-        <div class="mc-footer">
-          <p>À titre informatif seulement — Les simulations sont basées sur des rendements historiques réels et ne constituent pas des conseils financiers.</p>
-        </div>
       </div>
     </div><!-- /page-monte -->
 
@@ -1332,9 +1534,8 @@
         <!-- SIDEBAR PARAMS -->
         <div class="ret-sidebar">
 
-          <div>
-            <div class="section-title">Profil</div>
-            <div class="param-group general">
+          <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Profil</div>
+          <div class="sim-section-body"><div class="param-group general">
               <label class="ret-label">
                 <span class="label-text">Année de naissance</span>
                 <input type="number" id="birthYear" value="1971" min="1940" max="2000">
@@ -1347,17 +1548,30 @@
                 <span class="label-text">Âge de simulation (fin)</span>
                 <input type="number" id="endAge" value="90" min="60" max="100">
               </label>
-            </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border); margin-top:4px;">
+                <span class="label-text" style="margin:0;">Indexation à l'inflation</span>
+                <label class="paliers-toggle-switch">
+                  <input type="checkbox" id="globalIndexation" checked onchange="onGlobalIndexationChange()">
+                  <span class="paliers-slider"></span>
+                </label>
+              </div>
+            </div></div>
 
-            <!-- MC INTEGRATION -->
-            <div class="mc-link-box" id="mcLinkBox">
+          <!-- MC INTEGRATION -->
+          <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Simulateur</div>
+          <div class="sim-section-body">
+            <div class="param-group simulateur" style="padding:0; overflow:hidden;">
+            <div class="mc-link-box" id="mcLinkBox" style="border:none; border-radius:0; margin:0;">
               <div class="mc-link-header">
-                <label class="mc-link-toggle" for="useMcData">
-                  <input type="checkbox" id="useMcData" onchange="onMcLinkChange()">
+                <label class="mc-link-toggle" for="useMcData" style="justify-content:space-between;">
                   <span class="mc-link-label">
                     <span class="mc-link-icon">&#128279;</span>
                     Utiliser les retraits du Simulateur
                   </span>
+                  <label class="paliers-toggle-switch" style="flex-shrink:0;">
+                    <input type="checkbox" id="useMcData" onchange="onMcLinkChange()">
+                    <span class="paliers-slider"></span>
+                  </label>
                 </label>
               </div>
               <div class="mc-link-body" id="mcLinkBody" style="display:none;">
@@ -1384,15 +1598,20 @@
                 </div>
               </div>
             </div>
+            </div><!-- /param-group -->
           </div>
 
           <!-- FOND DE PENSION -->
-          <div>
-            <div class="section-title">Fond de pension</div>
-            <div class="param-group pension">
+          <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Fond de pension</div>
+          <div class="sim-section-body"><div class="param-group pension">
               <div class="param-label" style="margin-bottom:14px;">
                 <span><span class="ret-dot"></span>Fond de pension</span>
+                <label class="paliers-toggle-switch">
+                  <input type="checkbox" id="pensionEnabled" checked onchange="onPensionEnabledChange()">
+                  <span class="paliers-slider"></span>
+                </label>
               </div>
+              <div id="pensionFields">
               <div class="ret-view-toggle">
                 <button class="ret-view-btn active" id="btnRREGOP" onclick="setPensionMode('rregop')">RREGOP</button>
                 <button class="ret-view-btn" id="btnPension" onclick="setPensionMode('pension')">Pension</button>
@@ -1467,11 +1686,11 @@
                     <span class="unit">$/an</span>
                   </div>
                 </label>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                  <span class="label-text" style="flex:1;">Indexation</span>
-                  <label style="flex-direction:row; align-items:center; gap:6px; margin-bottom:0; cursor:pointer; text-transform:none; font-size:12px; font-weight:400; letter-spacing:0;">
-                    <input type="checkbox" id="pensionSimpleIndexed" checked style="width:auto; accent-color:var(--accent);">
-                    <span>Oui</span>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                  <span class="label-text" style="margin:0;">Indexation</span>
+                  <label class="paliers-toggle-switch">
+                    <input type="checkbox" id="pensionSimpleIndexed" checked>
+                    <span class="paliers-slider"></span>
                   </label>
                 </div>
                 <label class="ret-label" id="pensionSimpleIndexLabel">
@@ -1482,14 +1701,20 @@
                   </div>
                 </label>
               </div>
-            </div>
-          </div>
+              </div><!-- /pensionFields -->
+            </div></div>
 
           <!-- RRQ -->
-          <div>
-            <div class="section-title">RRQ — Rente du Québec</div>
-            <div class="param-group rrq">
-              <div class="param-label"><span><span class="ret-dot"></span>RRQ</span></div>
+          <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>RRQ — Rente du Québec</div>
+          <div class="sim-section-body"><div class="param-group rrq">
+              <div class="param-label">
+                <span><span class="ret-dot"></span>RRQ</span>
+                <label class="paliers-toggle-switch">
+                  <input type="checkbox" id="rrqEnabled" checked onchange="onRrqEnabledChange()">
+                  <span class="paliers-slider"></span>
+                </label>
+              </div>
+              <div id="rrqFields">
               <label class="ret-label">
                 <span class="label-text">Âge de début</span>
                 <select id="rrqAge">
@@ -1517,14 +1742,20 @@
               <div class="label-text" style="color: var(--muted); margin-top: 4px; line-height: 1.6;">
                 Note: −0.5%/mois avant 65 ans · +0.7%/mois après 65 ans
               </div>
-            </div>
-          </div>
+              </div><!-- /rrqFields -->
+            </div></div>
 
           <!-- PSV -->
-          <div>
-            <div class="section-title">PSV — Pension de Sécurité de Vieillesse</div>
-            <div class="param-group psv">
-              <div class="param-label"><span><span class="ret-dot"></span>PSV</span></div>
+          <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>PSV — Pension de Sécurité de Vieillesse</div>
+          <div class="sim-section-body"><div class="param-group psv">
+              <div class="param-label">
+                <span><span class="ret-dot"></span>PSV</span>
+                <label class="paliers-toggle-switch">
+                  <input type="checkbox" id="psvEnabled" checked onchange="onPsvEnabledChange()">
+                  <span class="paliers-slider"></span>
+                </label>
+              </div>
+              <div id="psvFields">
               <label class="ret-label">
                 <span class="label-text">Âge de début</span>
                 <select id="psvAge">
@@ -1551,8 +1782,8 @@
               <div class="label-text" style="color: var(--muted); margin-top: 4px; line-height: 1.6;">
                 Note: +0.6%/mois de report après 65 ans
               </div>
-            </div>
-          </div>
+              </div><!-- /psvFields -->
+            </div></div>
 
         </div><!-- /ret-sidebar -->
 
@@ -1603,7 +1834,10 @@
 
 <!-- ===================== SCRIPTS ===================== -->
 <script>
-// ===================== PLANIFICATEUR UPDATE BADGE =====================
+// ===================== COLLAPSIBLE SECTIONS (Simulateur) =====================
+function toggleSimSection(titleEl) {
+  titleEl.classList.toggle('collapsed');
+}
 function showPlanificateurUpdatedBadge() {
   // Show a small badge on the Planificateur nav item to signal it was updated
   const navBtn = document.getElementById('nav-retraite');
@@ -1752,6 +1986,119 @@ function setRetraitMode(mode) {
   document.getElementById('retrait-montant-field').style.display = mode === 'montant' ? 'block' : 'none';
   document.getElementById('retrait-pct-field').style.display = mode === 'pct' ? 'block' : 'none';
   document.getElementById('inflationBox').style.display = mode === 'pct' ? 'none' : 'block';
+  // Paliers only available in montant mode
+  const paliersToggleRow = document.getElementById('paliersToggleRow');
+  if (paliersToggleRow) paliersToggleRow.style.display = mode === 'montant' ? 'flex' : 'none';
+  if (mode !== 'montant') {
+    const cb = document.getElementById('paliersEnabled');
+    if (cb) cb.checked = false;
+    const sec = document.getElementById('paliersSection');
+    if (sec) sec.style.display = 'none';
+  }
+}
+
+// ===================== PALIERS DE RETRAIT =====================
+let paliers = []; // Array of { amount, fromAge }
+
+function togglePaliers() {
+  const enabled = document.getElementById('paliersEnabled').checked;
+  document.getElementById('paliersSection').style.display = enabled ? 'block' : 'none';
+  if (enabled && paliers.length === 0) {
+    const startAge = parseInt(document.getElementById('startAgeSimu').value) || 55;
+    const baseW = parseFloat(document.getElementById('annualWithdrawal').value) || 20000;
+    paliers = [
+      { amount: baseW, fromAge: startAge },
+      { amount: Math.round(baseW * 0.4 / 1000) * 1000, fromAge: 60 }
+    ];
+    renderPaliers();
+  }
+}
+
+function addPalier() {
+  const startAge = parseInt(document.getElementById('startAgeSimu').value) || 55;
+  const lastAge = paliers.length > 0 ? paliers[paliers.length - 1].fromAge + 5 : startAge;
+  paliers.push({ amount: 20000, fromAge: Math.min(lastAge, 90) });
+  renderPaliers();
+}
+
+function removePalier(idx) {
+  paliers.splice(idx, 1);
+  renderPaliers();
+}
+
+function renderPaliers() {
+  const container = document.getElementById('paliersList');
+  if (!container) return;
+  const startAge = parseInt(document.getElementById('startAgeSimu').value) || 55;
+  // Sort by fromAge ascending
+  paliers.sort((a, b) => a.fromAge - b.fromAge);
+  // First palier always anchored to startAge
+  if (paliers.length > 0) paliers[0].fromAge = startAge;
+  // Ensure no subsequent palier has a fromAge <= startAge
+  for (let i = 1; i < paliers.length; i++) {
+    if (paliers[i].fromAge <= paliers[i - 1].fromAge) {
+      paliers[i].fromAge = paliers[i - 1].fromAge + 1;
+    }
+  }
+
+  container.innerHTML = paliers.map((p, i) => {
+    const isFirst = i === 0;
+    const nextAge = paliers[i + 1] ? paliers[i + 1].fromAge - 1 : '…';
+    const ageLabel = isFirst
+      ? `De ${startAge} à ${paliers[1] ? paliers[1].fromAge - 1 : '…'} ans`
+      : i === paliers.length - 1
+        ? `À partir de ${p.fromAge} ans`
+        : `De ${p.fromAge} à ${paliers[i + 1].fromAge - 1} ans`;
+    return `
+      <div class="palier-row">
+        <div class="palier-label">Palier ${i + 1} — ${ageLabel}</div>
+        <div class="palier-input-wrap">
+          <input type="number" value="${p.amount}" min="0" step="500"
+            onchange="paliers[${i}].amount=parseFloat(this.value)||0; renderPaliers();"
+            placeholder="Montant">
+          <span class="pu">$/an</span>
+        </div>
+        <div class="palier-input-wrap" ${isFirst ? 'style="opacity:0.4;pointer-events:none"' : ''}>
+          <input type="number" value="${p.fromAge}" min="${startAge}" max="99" step="1"
+            onchange="paliers[${i}].fromAge=parseInt(this.value)||${p.fromAge}; renderPaliers();"
+            placeholder="Âge">
+          <span class="pu">ans</span>
+        </div>
+        ${isFirst
+          ? '<div style="width:22px"></div>'
+          : `<button class="palier-del-btn" onclick="removePalier(${i})" title="Supprimer">×</button>`
+        }
+      </div>
+      ${i < paliers.length - 1 ? '<div class="palier-divider"></div>' : ''}
+    `;
+  }).join('');
+}
+
+function getPaliersEnabled() {
+  const cb = document.getElementById('paliersEnabled');
+  return cb && cb.checked && retraitMode === 'montant';
+}
+
+function getWithdrawalForYear(y, W0, inflAdj, inflRate) {
+  if (!getPaliersEnabled() || paliers.length === 0) {
+    return inflAdj ? W0 * Math.pow(1 + inflRate, y - 1) : W0;
+  }
+  const startAge = parseInt(document.getElementById('startAgeSimu').value) || 55;
+  const currentAge = startAge + (y - 1);
+  // Find applicable palier (last one where fromAge <= currentAge)
+  let applicable = paliers[0];
+  for (const p of paliers) {
+    if (currentAge >= p.fromAge) applicable = p;
+    else break;
+  }
+  const baseAmount = applicable ? applicable.amount : W0;
+  // Apply inflation relative to the palier's fromAge start
+  if (inflAdj && applicable) {
+    const palierStartYear = Math.max(1, applicable.fromAge - startAge + 1);
+    const yearsInPalier = y - palierStartYear;
+    return baseAmount * Math.pow(1 + inflRate, Math.max(0, yearsInPalier));
+  }
+  return baseAmount;
 }
 
 let simMode = 'historique';
@@ -1778,6 +2125,8 @@ function simulate() {
   const fixedRate = isFixed ? parseFloat(document.getElementById('fixedRate').value) / 100 : null;
   const histReturns = isFixed ? null : getHistReturns();
   const histMethod = isFixed ? null : document.getElementById('histMethod').value;
+  const usePaliers = getPaliersEnabled();
+  const startAgeSimu = parseInt(document.getElementById('startAgeSimu').value) || 55;
 
   if (P0 <= 0 || years < 1) { alert('Veuillez entrer des valeurs valides.'); return; }
 
@@ -1796,7 +2145,7 @@ function simulate() {
     const blockState = { remaining: 0, start: 0, pos: 0 };
 
     for (let y = 1; y <= years; y++) {
-      const withdrawal = isPct ? val*wPct : (inflAdj ? W0*Math.pow(1+inflRate,y-1) : W0);
+      const withdrawal = isPct ? val*wPct : getWithdrawalForYear(y, W0, inflAdj, inflRate);
       if (val <= 0) { path.push(0); detailed.push({ year:y, startVal:0, returnRate:0, returnAmt:0, afterReturn:0, withdrawal:0, endVal:0, ruined:true }); if (!ruined) ruined = true; continue; }
       const startVal = val;
       val = val - withdrawal;
@@ -1826,7 +2175,7 @@ function simulate() {
   const labels = [];
 
   for (let y = 0; y <= years; y++) {
-    labels.push('An ' + y);
+    labels.push(startAgeSimu ? `${startAgeSimu + y} ans` : 'An ' + y);
     const slice = allPaths.map(p => p[y]);
     bands.p5.push(percentile(slice,5)); bands.p10.push(percentile(slice,10));
     bands.p25.push(percentile(slice,25)); bands.p50.push(percentile(slice,50));
@@ -1853,7 +2202,7 @@ function simulate() {
   const idxEl = document.getElementById('histIndex');
   const modeLabel = isFixed ? `Taux fixe · ${(fixedRate*100).toFixed(1)} %` : `Historique · ${idxEl.options[idxEl.selectedIndex].text.split(' ')[0]} · ${histMethod==='bootstrap'?'Bootstrap':'Séquences'}`;
 
-  renderResults({ labels, bands, sampledPaths, scenarioPaths, scenarioDetails, finalValues, survivePct, finalMedian, finalP10, finalP90, finalMean, N, years, P0, W0, inflAdj, inflRate, modeLabel, isFixed });
+  renderResults({ labels, bands, sampledPaths, scenarioPaths, scenarioDetails, finalValues, survivePct, finalMedian, finalP10, finalP90, finalMean, N, years, P0, W0, inflAdj, inflRate, modeLabel, isFixed, startAgeSimu, usePaliers, paliersSnapshot: usePaliers ? JSON.parse(JSON.stringify(paliers)) : null });
 }
 
 function renderResults(data) {
@@ -1865,7 +2214,8 @@ function renderResults(data) {
     retRender();
     showPlanificateurUpdatedBadge();
   }
-  const { labels, bands, sampledPaths, scenarioPaths, scenarioDetails, finalValues, survivePct, finalMedian, finalP10, finalP90, finalMean, N, years, P0, modeLabel, isFixed } = data;
+  const { labels, bands, sampledPaths, scenarioPaths, scenarioDetails, finalValues, survivePct, finalMedian, finalP10, finalP90, finalMean, N, years, P0, modeLabel, isFixed, startAgeSimu: simStartAge } = data;
+  const ageFmt = y => simStartAge ? `${simStartAge + y - 1} ans` : `An ${y}`;
   const tc = getThemeColors();
   const area = document.getElementById('resultsArea');
   area.innerHTML = '';
@@ -1931,28 +2281,37 @@ function renderResults(data) {
   if (isFixed) {
     const detail = scenarioDetails[0];
     const rows = detail.map(d => {
-      if (d.ruined) return `<tr class="sc-row-ruined"><td>An ${d.year}</td><td colspan="6" style="color:var(--red);font-style:italic;text-align:center;">Portefeuille épuisé</td></tr>`;
+      if (d.ruined) return `<tr class="sc-row-ruined"><td>${ageFmt(d.year)}</td><td colspan="6" style="color:var(--red);font-style:italic;text-align:center;">Portefeuille épuisé</td></tr>`;
       const rPct = (d.returnRate*100).toFixed(2);
       const rColor = d.returnRate>=0?'var(--green)':'var(--red)';
       const rSign = d.returnRate>=0?'+':'';
-      return `<tr><td class="sc-year">An ${d.year}</td><td class="sc-num">${mcFmt(d.startVal)}</td><td class="sc-num sc-withdrawal">−${mcFmt(d.withdrawal)}</td><td class="sc-num">${mcFmt(d.afterWithdrawal)}</td><td class="sc-num" style="color:${rColor}">${rSign}${rPct} %</td><td class="sc-num" style="color:${rColor}">${rSign}${mcFmt(d.returnAmt)}</td><td class="sc-num sc-end">${mcFmt(d.endVal)}</td></tr>`;
+      return `<tr><td class="sc-year">${ageFmt(d.year)}</td><td class="sc-num">${mcFmt(d.startVal)}</td><td class="sc-num sc-withdrawal">−${mcFmt(d.withdrawal)}</td><td class="sc-num">${mcFmt(d.afterWithdrawal)}</td><td class="sc-num" style="color:${rColor}">${rSign}${rPct} %</td><td class="sc-num" style="color:${rColor}">${rSign}${mcFmt(d.returnAmt)}</td><td class="sc-num sc-end">${mcFmt(d.endVal)}</td></tr>`;
     }).join('');
-    scenHTML = `<div class="fade-in"><div class="panel"><div class="panel-header"><div class="icon">📊</div><h2>Détail annuel — taux fixe</h2></div><div class="sc-table-wrap active"><table class="sc-table"><thead><tr><th>Année</th><th>Valeur début</th><th>Retrait</th><th>Après retrait</th><th>Rendement %</th><th>Rendement $</th><th>Valeur fin</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
+    scenHTML = `<div class="fade-in"><div class="panel"><div class="panel-header"><div class="icon">📊</div><h2>Détail annuel — taux fixe</h2></div><div class="sc-table-wrap active"><table class="sc-table"><thead><tr><th>Âge</th><th>Valeur début</th><th>Retrait</th><th>Après retrait</th><th>Rendement %</th><th>Rendement $</th><th>Valeur fin</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
   } else {
     const scenLabels = ['😟 Le pire','2','3','4','5','6','7','8','9','😊 Le meilleur'];
     const tabBtns = scenarioDetails.map((detail,i) => {
       const isRuined = detail.some(d => d.ruined || d.endVal===0);
-      return `<button class="sc-tab ${i===0?'active':''}" onclick="switchScenTab(${i})" style="--sc-color:${scenColors[i]}">${scenLabels[i]}${isRuined?' <span title="Portefeuille épuisé" style="font-size:0.75em;">💀</span>':''}</button>`;
+      // Compute annualized return (CAGR) from individual year returns, excluding ruined years
+      const validReturns = detail.filter(d => !d.ruined);
+      let cagrStr = '';
+      if (validReturns.length > 0) {
+        const product = validReturns.reduce((acc, d) => acc * (1 + d.returnRate), 1);
+        const cagr = Math.pow(product, 1 / validReturns.length) - 1;
+        const sign = cagr >= 0 ? '+' : '';
+        cagrStr = `<span class="sc-tab-cagr">${sign}${(cagr * 100).toFixed(1)} %/an</span>`;
+      }
+      return `<button class="sc-tab ${i===0?'active':''}" onclick="switchScenTab(${i})" style="--sc-color:${scenColors[i]}"><span>${scenLabels[i]}${isRuined?' <span title="Portefeuille épuisé" style="font-size:0.75em;">💀</span>':''}</span>${cagrStr}</button>`;
     }).join('');
     const tables = scenarioDetails.map((detail,i) => {
       const rows = detail.map(d => {
-        if (d.ruined) return `<tr class="sc-row-ruined"><td>An ${d.year}</td><td colspan="6" style="color:var(--red);font-style:italic;text-align:center;">Portefeuille épuisé</td></tr>`;
+        if (d.ruined) return `<tr class="sc-row-ruined"><td>${ageFmt(d.year)}</td><td colspan="6" style="color:var(--red);font-style:italic;text-align:center;">Portefeuille épuisé</td></tr>`;
         const rPct = (d.returnRate*100).toFixed(2);
         const rColor = d.returnRate>=0?'var(--green)':'var(--red)';
         const rSign = d.returnRate>=0?'+':'';
-        return `<tr><td class="sc-year">An ${d.year}</td><td class="sc-num">${mcFmt(d.startVal)}</td><td class="sc-num sc-withdrawal">−${mcFmt(d.withdrawal)}</td><td class="sc-num">${mcFmt(d.afterWithdrawal)}</td><td class="sc-num" style="color:${rColor}">${rSign}${rPct} %</td><td class="sc-num" style="color:${rColor}">${rSign}${mcFmt(d.returnAmt)}</td><td class="sc-num sc-end">${mcFmt(d.endVal)}</td></tr>`;
+        return `<tr><td class="sc-year">${ageFmt(d.year)}</td><td class="sc-num">${mcFmt(d.startVal)}</td><td class="sc-num sc-withdrawal">−${mcFmt(d.withdrawal)}</td><td class="sc-num">${mcFmt(d.afterWithdrawal)}</td><td class="sc-num" style="color:${rColor}">${rSign}${rPct} %</td><td class="sc-num" style="color:${rColor}">${rSign}${mcFmt(d.returnAmt)}</td><td class="sc-num sc-end">${mcFmt(d.endVal)}</td></tr>`;
       }).join('');
-      return `<div class="sc-table-wrap ${i===0?'active':''}" data-sc="${i}"><table class="sc-table"><thead><tr><th>Année</th><th>Valeur début</th><th>Retrait</th><th>Après retrait</th><th>Rendement %</th><th>Rendement $</th><th>Valeur fin</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      return `<div class="sc-table-wrap ${i===0?'active':''}" data-sc="${i}"><table class="sc-table"><thead><tr><th>Âge</th><th>Valeur début</th><th>Retrait</th><th>Après retrait</th><th>Rendement %</th><th>Rendement $</th><th>Valeur fin</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }).join('');
     scenHTML = `<div class="fade-in"><div class="panel"><div class="panel-header"><div class="icon">🎲</div><h2>10 scénarios aléatoires — détail annuel</h2></div><div class="sc-tabs">${tabBtns}</div><div class="scenarios-wrap">${tables}</div></div></div>`;
   }
@@ -2084,19 +2443,29 @@ function setMcScenario(scenario) {
 }
 
 function getMcWithdrawal(year) {
-  // year = 0-based index from startAge
+  // year = 0-based index from startAge (mcWithdrawalStartAge)
   const data = window._lastSimData;
   if (!data) return 0;
-  const { bands, isFixed, scenarioPaths, W0, inflAdj, inflRate } = data;
+  const { W0, inflAdj, inflRate, usePaliers, paliersSnapshot, startAgeSimu } = data;
 
-  if (isFixed && mcScenario === 'fixed') {
-    // Use fixed trajectory withdrawal (same every year with inflation)
-    const w = inflAdj ? W0 * Math.pow(1 + inflRate, year) : W0;
-    return w;
+  if (usePaliers && paliersSnapshot && paliersSnapshot.length > 0) {
+    const mcStartAge = parseInt(document.getElementById('mcWithdrawalStartAge').value) || 55;
+    const currentAge = mcStartAge + year;
+    // Find applicable palier
+    let applicable = paliersSnapshot[0];
+    for (const p of paliersSnapshot) {
+      if (currentAge >= p.fromAge) applicable = p;
+      else break;
+    }
+    const base = applicable ? applicable.amount : (W0 || 0);
+    if (inflAdj && applicable) {
+      const palierStartYear = Math.max(0, applicable.fromAge - mcStartAge);
+      return base * Math.pow(1 + inflRate, Math.max(0, year - palierStartYear));
+    }
+    return base;
   }
 
-  // For percentile bands, the "withdrawal" at each year is constant (W0 with inflation)
-  // What we expose is the annual withdrawal amount from the MC simulation
+  // Default: W0 with optional inflation
   const w = inflAdj ? W0 * Math.pow(1 + inflRate, year) : W0;
   return w;
 }
@@ -2122,7 +2491,18 @@ function updateMcLinkInfo() {
     : mcScenario === 'p10'   ? 'Simulateur — P10 (pessimiste)'
     : mcScenario === 'p90'   ? 'Simulateur — P90 (optimiste)'
     : 'Simulateur — P50 (médiane)';
-  el.innerHTML = `<strong>${label}</strong><br>Retrait de base : ${retFmt(w)}/an${inflAdj ? ` · indexé ${(inflRate*100).toFixed(1)}%/an` : ''}<br>Début des retraits : <strong>${mcStartAge} ans</strong>`;
+  let retraitLine = '';
+  if (data.usePaliers && data.paliersSnapshot && data.paliersSnapshot.length > 0) {
+    const palierDesc = data.paliersSnapshot.map((p, i) => {
+      const next = data.paliersSnapshot[i + 1];
+      const range = i === 0 ? `avant ${next ? next.fromAge : '…'} ans` : (next ? `${p.fromAge}–${next.fromAge - 1} ans` : `${p.fromAge}+ ans`);
+      return `${retFmt(p.amount)}/an (${range})`;
+    }).join(' · ');
+    retraitLine = `Paliers : ${palierDesc}`;
+  } else {
+    retraitLine = `Retrait de base : ${retFmt(w)}/an${inflAdj ? ` · indexé ${(inflRate*100).toFixed(1)}%/an` : ''}`;
+  }
+  el.innerHTML = `<strong>${label}</strong><br>${retraitLine}<br>Début des retraits : <strong>${mcStartAge} ans</strong>`;
 }
 
 function setAmountMode(mode) {
@@ -2172,19 +2552,86 @@ function calcRREGOPPenalty(renteAge, anneesService) {
   return { factor, penaltyPct, moisAnticipation, critereAtteint };
 }
 
+function onPensionEnabledChange() {
+  const enabled = document.getElementById('pensionEnabled').checked;
+  const fields = document.getElementById('pensionFields');
+  if (fields) {
+    fields.style.opacity = enabled ? '1' : '0.4';
+    fields.style.pointerEvents = enabled ? '' : 'none';
+  }
+  retRender();
+}
+
+function onRrqEnabledChange() {
+  const enabled = document.getElementById('rrqEnabled').checked;
+  const fields = document.getElementById('rrqFields');
+  if (fields) {
+    fields.style.opacity = enabled ? '1' : '0.4';
+    fields.style.pointerEvents = enabled ? '' : 'none';
+  }
+  retRender();
+}
+
+function onPsvEnabledChange() {
+  const enabled = document.getElementById('psvEnabled').checked;
+  const fields = document.getElementById('psvFields');
+  if (fields) {
+    fields.style.opacity = enabled ? '1' : '0.4';
+    fields.style.pointerEvents = enabled ? '' : 'none';
+  }
+  retRender();
+}
+
+function onGlobalIndexationChange() {
+  const enabled = document.getElementById('globalIndexation').checked;
+  // All indexation rate inputs in the planificateur
+  const indexInputs = [
+    'pensionIndex', 'pensionSimpleIndexRate', 'rrqIndex', 'psvIndex'
+  ];
+  indexInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = !enabled;
+    el.closest('.ret-label, .input-with-unit, label')?.closest('.ret-label')
+      ? el.closest('.ret-label').style.opacity = enabled ? '1' : '0.4'
+      : null;
+    // Walk up to find the ret-label and dim it
+    let parent = el.parentElement;
+    while (parent && !parent.classList.contains('ret-label')) parent = parent.parentElement;
+    if (parent) parent.style.opacity = enabled ? '1' : '0.4';
+  });
+  // Also disable/enable the pensionSimpleIndexed checkbox and its label
+  const simpleIdx = document.getElementById('pensionSimpleIndexed');
+  if (simpleIdx) {
+    simpleIdx.disabled = !enabled;
+    const simpleLabel = document.getElementById('pensionSimpleIndexLabel');
+    if (simpleLabel) simpleLabel.style.opacity = enabled ? '1' : '0.4';
+    // The row with the checkbox itself
+    let parent = simpleIdx.closest('div[style*="flex"]') || simpleIdx.parentElement;
+    if (parent) parent.style.opacity = enabled ? '1' : '0.4';
+  }
+  retRender();
+}
+
 function getData() {
   const birthYear = parseInt(document.getElementById('birthYear').value)||1971;
   const endAge = parseInt(document.getElementById('endAge').value)||90;
+  const globalIdx = document.getElementById('globalIndexation') ? document.getElementById('globalIndexation').checked : true;
 
   let pensionAnnual=0, pensionStartAge=55, pensionIdxEffective=0;
+  const pensionEnabled = document.getElementById('pensionEnabled') ? document.getElementById('pensionEnabled').checked : true;
 
-  if (retPensionMode==='rregop') {
+  if (!pensionEnabled) {
+    pensionAnnual = 0;
+    pensionStartAge = 999; // never starts
+    window._rregopCoordination = 0;
+  } else if (retPensionMode==='rregop') {
     const pensionAge = parseInt(document.getElementById('pensionAge').value);
     const rregopRenteAge = parseInt(document.getElementById('rregopRenteAge').value);
     const rregopSalaire = parseFloat(document.getElementById('rregopSalaire').value)||0;
     const rregopAnnees = Math.min(40,parseFloat(document.getElementById('rregopAnnees').value)||0);
     const rregopMGA = parseFloat(document.getElementById('rregopMGA').value)||71300;
-    pensionIdxEffective = parseFloat(document.getElementById('pensionIndex').value)/100;
+    pensionIdxEffective = globalIdx ? parseFloat(document.getElementById('pensionIndex').value)/100 : 0;
     pensionStartAge = rregopRenteAge;
     const rregopBase = rregopAnnees*0.02*rregopSalaire;
     const { factor, penaltyPct, moisAnticipation, critereAtteint } = calcRREGOPPenalty(rregopRenteAge, rregopAnnees);
@@ -2207,19 +2654,21 @@ function getData() {
   } else {
     pensionStartAge = parseInt(document.getElementById('pensionSimpleAge').value);
     pensionAnnual = parseFloat(document.getElementById('pensionSimpleAmount').value)||0;
-    const indexed = document.getElementById('pensionSimpleIndexed').checked;
+    const indexed = globalIdx && document.getElementById('pensionSimpleIndexed').checked;
     pensionIdxEffective = indexed ? parseFloat(document.getElementById('pensionSimpleIndexRate').value)/100 : 0;
     window._rregopCoordination = 0;
   }
 
   const rrqAge = parseInt(document.getElementById('rrqAge').value);
   const rrqAnnual65 = parseFloat(document.getElementById('rrqAmount').value)||0;
-  const rrqIdx = parseFloat(document.getElementById('rrqIndex').value)/100;
+  const rrqIdx = globalIdx ? parseFloat(document.getElementById('rrqIndex').value)/100 : 0;
   const psvAge = parseInt(document.getElementById('psvAge').value);
   const psvAnnual65 = parseFloat(document.getElementById('psvAmount').value)||0;
-  const psvIdx = parseFloat(document.getElementById('psvIndex').value)/100;
-  const rrqStartAnnual = rrqAnnual65*calcRRQFactor(rrqAge);
-  const psvStartAnnual = psvAnnual65*calcPSVFactor(psvAge);
+  const psvIdx = globalIdx ? parseFloat(document.getElementById('psvIndex').value)/100 : 0;
+  const rrqEnabled = document.getElementById('rrqEnabled') ? document.getElementById('rrqEnabled').checked : true;
+  const psvEnabled = document.getElementById('psvEnabled') ? document.getElementById('psvEnabled').checked : true;
+  const rrqStartAnnual = rrqEnabled ? rrqAnnual65*calcRRQFactor(rrqAge) : 0;
+  const psvStartAnnual = psvEnabled ? psvAnnual65*calcPSVFactor(psvAge) : 0;
   const coordination = window._rregopCoordination||0;
   const internalStartAge = Math.min(pensionStartAge,rrqAge,psvAge);
   const retirementAge = parseInt(document.getElementById('retirementAge').value)||55;
@@ -2273,16 +2722,14 @@ function getData() {
           }
         }
         // Only pay withdrawal if the portfolio has value at this year
-        if (portfolioValue !== null && portfolioValue > 0 && mcData.W0) {
-          portfolio = mcData.inflAdj
-            ? mcData.W0 * Math.pow(1 + mcData.inflRate, yearIdx)
-            : (mcData.W0 || 0);
-          portfolio = Math.min(portfolio, portfolioValue);
+        if (portfolioValue !== null && portfolioValue > 0) {
+          const withdrawalAmt = getMcWithdrawal(yearIdx);
+          portfolio = Math.min(withdrawalAmt, portfolioValue);
         }
       }
     }
     const totalAnnualWithPortfolio = totalAnnual + portfolio;
-    rows.push({ age, year, pension, rrq, psv, portfolio, totalAnnual: totalAnnualWithPortfolio, totalAnnualBase: totalAnnual, totalMonthly: totalAnnualWithPortfolio/12, pensionStart:age===pensionStartAge, rrqStart:age===rrqAge, psvStart:age===psvAge });
+    rows.push({ age, year, pension, rrq, psv, portfolio, totalAnnual: totalAnnualWithPortfolio, totalAnnualBase: totalAnnual, totalMonthly: totalAnnualWithPortfolio/12, pensionStart: pensionEnabled && age===pensionStartAge, rrqStart: rrqEnabled && age===rrqAge, psvStart: psvEnabled && age===psvAge });
   }
   return rows;
 }
@@ -2308,7 +2755,7 @@ function retRender() {
     <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--pension)"></div>${pensionLabel}</div>
     <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--rrq)"></div>RRQ</div>
     <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--psv)"></div>PSV</div>
-    ${useMc ? `<div class="ret-legend-item"><div class="ret-legend-dot" style="background:${cPortfolio}"></div>Portefeuille Sim.</div>` : ''}
+    ${useMc ? `<div class="ret-legend-item"><div class="ret-legend-dot" style="background:${cPortfolio}"></div>Portefeuille</div>` : ''}
     <div class="ret-legend-item"><div class="ret-legend-dot" style="background:var(--total)"></div>Total</div>`;
 
   const labels = rows.map(r => r.age+' ans');
@@ -2341,7 +2788,7 @@ function retRender() {
   ];
 
   if (useMc) {
-    datasets.push(baseDataset('Portefeuille Sim.', portfolioData, cPortfolio));
+    datasets.push(baseDataset('Portefeuille', portfolioData, cPortfolio));
   }
 
   datasets.push({ label:'Total', data:totalData, backgroundColor:'transparent', borderColor:cTotal, borderWidth:2, borderDash:[5,3], type:'line', fill:false, tension:0.4, pointRadius:2, pointHoverRadius:5, yAxisID:'y' });
