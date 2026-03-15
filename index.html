@@ -467,8 +467,9 @@
 
   /* Collapsible sections — shared by sim-sidebar and ret-sidebar */
   .sim-section-title {
-    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-    color: var(--muted); margin-top: 28px; margin-bottom: 10px;
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px; font-weight: 400; letter-spacing: 0; text-transform: none;
+    color: var(--text); margin-top: 28px; margin-bottom: 10px;
     display: flex; align-items: center; gap: 8px;
     cursor: pointer; user-select: none;
     transition: color 0.15s;
@@ -732,19 +733,7 @@
   .checkbox-field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
   .checkbox-field .cb-label { font-size: 0.60rem; font-weight: 500; color: var(--text); cursor: pointer; letter-spacing: 0; text-transform: none; margin-bottom: 0; }
 
-  .retrait-toggle-row { display: flex; gap: 6px; margin-bottom: 8px; }
 
-  .retrait-btn {
-    flex: 1; padding: 6px 10px; border-radius: 8px;
-    border: 1.5px solid var(--border); background: transparent;
-    color: var(--muted); font-family: 'Instrument Sans', sans-serif;
-    font-size: 11px; font-weight: 500; cursor: pointer;
-    transition: all 0.2s; text-align: center;
-  }
-
-  .retrait-btn.active { border-color: var(--accent); background: rgba(37,99,176,0.08); color: var(--accent); }
-  :root.dark .retrait-btn.active { background: rgba(37,99,176,0.1); }
-  .retrait-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
 
   /* ---- Paliers de retrait ---- */
   .paliers-toggle-row {
@@ -1400,23 +1389,11 @@
             <div class="sim-section-title" onclick="toggleSimSection(this)"><span class="sim-chevron">▼</span>Retraits</div>
             <div class="sim-section-body"><div class="param-group" style="--pg-color:var(--orange);">
                 <div class="param-label" style="margin-bottom:12px;">
-                  <span style="font-size:12px;font-weight:500;">Retrait annuel <span class="tip" data-tip="Montant ou pourcentage retiré chaque année. En mode %, le retrait est recalculé chaque année selon la valeur du portefeuille.">ⓘ</span></span>
+                  <span style="font-size:12px;font-weight:500;">Retrait annuel <span class="tip" data-tip="Montant retiré chaque année du portefeuille.">ⓘ</span></span>
                 </div>
-                <div class="retrait-toggle-row">
-                  <button class="retrait-btn active" id="btn-retrait-montant" onclick="setRetraitMode('montant')">$ Montant</button>
-                  <button class="retrait-btn" id="btn-retrait-pct" onclick="setRetraitMode('pct')">% Taux</button>
-                </div>
-                <div id="retrait-montant-field">
-                  <div class="input-with-unit">
-                    <input type="number" id="annualWithdrawal" value="20000" min="0" step="500">
-                    <span class="unit">$/an</span>
-                  </div>
-                </div>
-                <div id="retrait-pct-field" style="display:none">
-                  <div class="input-with-unit">
-                    <input type="number" id="withdrawalPct" value="4" min="0" max="100" step="0.1">
-                    <span class="unit">%</span>
-                  </div>
+                <div class="input-with-unit">
+                  <input type="number" id="annualWithdrawal" value="30000" min="0" step="500">
+                  <span class="unit">$/an</span>
                 </div>
 
                 <!-- Paliers toggle -->
@@ -1546,7 +1523,7 @@
               </label>
               <label class="ret-label">
                 <span class="label-text">Âge de simulation (fin)</span>
-                <input type="number" id="endAge" value="90" min="60" max="100">
+                <input type="number" id="endAge" value="95" min="60" max="100">
               </label>
               <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border); margin-top:4px;">
                 <span class="label-text" style="margin:0;">Indexation à l'inflation</span>
@@ -1646,7 +1623,7 @@
                 <label class="ret-label">
                   <span class="label-text">Années de service pour le calcul (max 40)</span>
                   <div class="input-with-unit">
-                    <input type="number" id="rregopAnnees" value="13" min="1" max="40" step="1">
+                    <input type="number" id="rregopAnnees" value="14.5" min="1" max="40" step="0.5">
                     <span class="unit">ans</span>
                   </div>
                 </label>
@@ -1728,7 +1705,7 @@
               <label class="ret-label">
                 <span class="label-text">Montant annuel à 65 ans</span>
                 <div class="input-with-unit">
-                  <input type="number" id="rrqAmount" value="15444" min="0" step="100">
+                  <input type="number" id="rrqAmount" value="17760" min="0" step="100">
                   <span class="unit">$/an</span>
                 </div>
               </label>
@@ -1768,7 +1745,7 @@
               <label class="ret-label">
                 <span class="label-text">Montant annuel à 65 ans (2024)</span>
                 <div class="input-with-unit">
-                  <input type="number" id="psvAmount" value="8800" min="0" step="100">
+                  <input type="number" id="psvAmount" value="8907.72" min="0" step="100">
                   <span class="unit">$/an</span>
                 </div>
               </label>
@@ -1780,7 +1757,7 @@
                 </div>
               </label>
               <div class="label-text" style="color: var(--muted); margin-top: 4px; line-height: 1.6;">
-                Note: +0.6%/mois de report après 65 ans
+                Note: +0.6%/mois de report après 65 ans · <span style="color:var(--green);font-weight:500;">+10% automatique à 75 ans</span>
               </div>
               </div><!-- /psvFields -->
             </div></div>
@@ -1977,25 +1954,7 @@ function sampleHistReturn(returns, method, blockState) {
   return r;
 }
 
-let retraitMode = 'montant';
 
-function setRetraitMode(mode) {
-  retraitMode = mode;
-  document.getElementById('btn-retrait-montant').classList.toggle('active', mode === 'montant');
-  document.getElementById('btn-retrait-pct').classList.toggle('active', mode === 'pct');
-  document.getElementById('retrait-montant-field').style.display = mode === 'montant' ? 'block' : 'none';
-  document.getElementById('retrait-pct-field').style.display = mode === 'pct' ? 'block' : 'none';
-  document.getElementById('inflationBox').style.display = mode === 'pct' ? 'none' : 'block';
-  // Paliers only available in montant mode
-  const paliersToggleRow = document.getElementById('paliersToggleRow');
-  if (paliersToggleRow) paliersToggleRow.style.display = mode === 'montant' ? 'flex' : 'none';
-  if (mode !== 'montant') {
-    const cb = document.getElementById('paliersEnabled');
-    if (cb) cb.checked = false;
-    const sec = document.getElementById('paliersSection');
-    if (sec) sec.style.display = 'none';
-  }
-}
 
 // ===================== PALIERS DE RETRAIT =====================
 let paliers = []; // Array of { amount, fromAge }
@@ -2008,7 +1967,7 @@ function togglePaliers() {
     const baseW = parseFloat(document.getElementById('annualWithdrawal').value) || 20000;
     paliers = [
       { amount: baseW, fromAge: startAge },
-      { amount: Math.round(baseW * 0.4 / 1000) * 1000, fromAge: 60 }
+      { amount: 20000, fromAge: 60 }
     ];
     renderPaliers();
   }
@@ -2076,7 +2035,7 @@ function renderPaliers() {
 
 function getPaliersEnabled() {
   const cb = document.getElementById('paliersEnabled');
-  return cb && cb.checked && retraitMode === 'montant';
+  return cb && cb.checked;
 }
 
 function getWithdrawalForYear(y, W0, inflAdj, inflRate) {
@@ -2114,10 +2073,8 @@ function setSimMode(mode) {
 
 function simulate() {
   const P0 = parseFloat(document.getElementById('portfolioValue').value);
-  const isPct = retraitMode === 'pct';
-  const W0 = isPct ? 0 : parseFloat(document.getElementById('annualWithdrawal').value);
-  const wPct = isPct ? parseFloat(document.getElementById('withdrawalPct').value) / 100 : 0;
-  const inflAdj = !isPct && document.getElementById('inflationCheck').checked;
+  const W0 = parseFloat(document.getElementById('annualWithdrawal').value);
+  const inflAdj = document.getElementById('inflationCheck').checked;
   const inflRate = inflAdj ? parseFloat(document.getElementById('inflationRate').value) / 100 : 0;
   const years = parseInt(document.getElementById('years').value);
   const N = parseInt(document.getElementById('numSims').value);
@@ -2145,7 +2102,7 @@ function simulate() {
     const blockState = { remaining: 0, start: 0, pos: 0 };
 
     for (let y = 1; y <= years; y++) {
-      const withdrawal = isPct ? val*wPct : getWithdrawalForYear(y, W0, inflAdj, inflRate);
+      const withdrawal = getWithdrawalForYear(y, W0, inflAdj, inflRate);
       if (val <= 0) { path.push(0); detailed.push({ year:y, startVal:0, returnRate:0, returnAmt:0, afterReturn:0, withdrawal:0, endVal:0, ruined:true }); if (!ruined) ruined = true; continue; }
       const startVal = val;
       val = val - withdrawal;
@@ -2674,8 +2631,8 @@ function getData() {
   const retirementAge = parseInt(document.getElementById('retirementAge').value)||55;
   const useMcCheck = document.getElementById('useMcData') && document.getElementById('useMcData').checked && window._lastSimData;
   const mcStartAgeVal = useMcCheck ? (parseInt(document.getElementById('mcWithdrawalStartAge').value)||55) : retirementAge;
-  // Display starts at mcWithdrawalStartAge when MC active, otherwise retirementAge
-  const displayStartAge = useMcCheck ? mcStartAgeVal : retirementAge;
+  // Always display from retirementAge so the table/chart always starts at retirement
+  const displayStartAge = retirementAge;
   const startAge = displayStartAge; // used for MC yearIdx alignment
   const rows = [];
 
@@ -2688,7 +2645,8 @@ function getData() {
     const pensionBrut = yP>=0 ? pensionAnnual*Math.pow(1+pensionIdxEffective,yP) : 0;
     const pension = Math.max(0,pensionBrut-coordApplied);
     const rrq = yR>=0 ? rrqStartAnnual*Math.pow(1+rrqIdx,yR) : 0;
-    const psv = yS>=0 ? psvStartAnnual*Math.pow(1+psvIdx,yS) : 0;
+    const psvBase = yS>=0 ? psvStartAnnual*Math.pow(1+psvIdx,yS) : 0;
+    const psv = psvBase * (age >= 75 ? 1.10 : 1);
     const totalAnnual = pension+rrq+psv;
     const totalMonthly = totalAnnual/12;
     // MC withdrawal integration
@@ -2746,8 +2704,12 @@ function retRender() {
   document.getElementById('thPension').textContent = pensionLabel;
   document.getElementById('thTotal').textContent = totalLabel;
 
-  // Show/hide portfolio column header
+  // Show/hide and label portfolio column header
   const thPortfolio = document.getElementById('thPortfolio');
+  if (thPortfolio) {
+    thPortfolio.style.display = useMc ? '' : 'none';
+    thPortfolio.textContent = 'Retraits';
+  }
 
   const cPortfolio = !isDark ? '#7c3aed' : '#a78bfa';
 
