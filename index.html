@@ -1502,18 +1502,30 @@
             <div class="sim-section-body"><div class="param-group" style="--pg-color:var(--accent2);">
                 <label class="ret-label">
                   <span class="label-text">Indice <span class="tip" data-tip="Données annuelles ajustées pour dividendes.<br><br><b>iShares (synthétiques 1988–2024)</b><br>· XEQT — 100% actions mondiales<br>· XGRO — 80% actions / 20% obl.<br>· XBAL — 60% actions / 40% obl.<br>· XCNS — 40% actions / 60% obl.<br><br><b>Indices classiques</b><br>· S&amp;P 500 — 1928–2024<br>· TSX — 1956–2024<br>· Port. 60/40 — S&amp;P 500 + Obl. US<br>· Port. 80/20 — S&amp;P 500 + Obl. US">ⓘ</span></span>
-                  <select id="histIndex">
-                    <option value="xeqt" selected>XEQT — 100% actions (1988–2024)</option>
-                    <option value="xgro">XGRO — 80/20 actions/obl. (1988–2024)</option>
-                    <option value="xbal">XBAL — 60/40 actions/obl. (1988–2024)</option>
-                    <option value="xcns">XCNS — 40/60 actions/obl. (1988–2024)</option>
-                    <option value="p6040">Portefeuille 60/40 (1928–2024)</option>
-                    <option value="p8020">Portefeuille 80/20 (1928–2024)</option>
+                  <select id="histIndex" onchange="onHistIndexChange()">
+                    <option value="xeqt_cad" selected>XEQT (1990–2024)</option>
+                    <option value="xgro_cad">XGRO 80/20 (1990–2024)</option>
+                    <option value="xbal_cad">XBAL 60/40 (1990–2024)</option>
                     <option value="sp500">S&amp;P 500 (1928–2024)</option>
                     <option value="tsx">TSX (1956–2024)</option>
+                    <option value="vanguard5">Vanguard All-Equity — moy. 5 ans</option>
+                    <option value="vanguard10">Vanguard All-Equity — moy. 10 ans</option>
+                    <option value="vanguard30">Vanguard All-Equity — moy. 30 ans</option>
+                    <option value="dalio5">Ray Dalio All Weather — moy. 5 ans</option>
+                    <option value="dalio10">Ray Dalio All Weather — moy. 10 ans</option>
+                    <option value="dalio30">Ray Dalio All Weather — moy. 30 ans</option>
+                    <option value="benfelix5">Ben Felix Five Factor 100/0 — moy. 5 ans</option>
+                    <option value="benfelix10">Ben Felix Five Factor 100/0 — moy. 10 ans</option>
+                    <option value="benfelix30">Ben Felix Five Factor 100/0 — moy. 30 ans</option>
+                    <option value="benfelix8020_5">Ben Felix Five Factor 80/20 — moy. 5 ans</option>
+                    <option value="benfelix8020_10">Ben Felix Five Factor 80/20 — moy. 10 ans</option>
+                    <option value="benfelix8020_30">Ben Felix Five Factor 80/20 — moy. 30 ans</option>
+                    <option value="benfelix6040_5">Ben Felix Five Factor 60/40 — moy. 5 ans</option>
+                    <option value="benfelix6040_10">Ben Felix Five Factor 60/40 — moy. 10 ans</option>
+                    <option value="benfelix6040_30">Ben Felix Five Factor 60/40 — moy. 30 ans</option>
                   </select>
                 </label>
-                <label class="ret-label" style="margin-bottom:0;">
+                <label class="ret-label" style="margin-bottom:0;" id="histMethodLabel">
                   <span class="label-text">Méthode <span class="tip" data-tip="<b>Bootstrap</b><br>Chaque année tirée indépendamment au hasard. Grande diversité mais ignore les cycles.<br><br><b>Séquences 5 ans</b><br>Blocs consécutifs de 5 ans. Préserve les cycles courts.<br><br><b>Séquences 7 ans</b><br>Blocs de 7 ans. Capture mieux les récessions prolongées.<br><br><b>Séquences 10 ans</b><br>Blocs de 10 ans. Reproduit les grandes décennies (ex: années 70, 2000–2009).">ⓘ</span></span>
                   <select id="histMethod">
                     <option value="bootstrap">Bootstrap — années indépendantes</option>
@@ -1890,10 +1902,6 @@
     <div class="page" id="page-donnees">
       <div style="padding:32px 40px;">
         <div class="chart-title" style="margin-bottom:6px;">Données historiques</div>
-        <p style="font-size:12px; color:var(--muted); margin-bottom:24px; font-family:'DM Mono',monospace;">
-          Rendements annuels totaux (dividendes inclus). S&amp;P 500 &amp; Obligations US 10 ans : 1928–2024. TSX : 1956–2024.
-          Sources : Damodaran (NYU), Bloomberg.
-        </p>
         <div class="table-container">
           <table id="histDataTable" class="ret-table">
             <thead>
@@ -1901,20 +1909,17 @@
                 <th>Année</th>
                 <th>S&amp;P 500</th>
                 <th>TSX</th>
-                <th>Obl. US 10 ans</th>
-                <th>Port. 60/40</th>
-                <th>Port. 80/20</th>
-                <th>XEQT synth.</th>
-                <th>XGRO synth.</th>
-                <th>XBAL synth.</th>
-                <th>XCNS synth.</th>
+                <th>XEQT</th>
+                <th>XGRO</th>
+                <th>XBAL</th>
               </tr>
             </thead>
             <tbody id="histDataBody"></tbody>
           </table>
         </div>
         <p style="font-size:11px; color:var(--muted); margin-top:14px; font-family:'DM Mono',monospace; line-height:1.7;">
-          <strong style="color:var(--text);">XEQT / XGRO / XBAL / XCNS synth.</strong> — Extrapolés à partir des composantes iShares selon les poids cibles de chaque FNB (actions mondiales + obligations). Sources : Yahoo Finance pour les vraies valeurs disponibles (XGRO &amp; XBAL depuis 2008, XEQT depuis 2020, XCNS depuis 2020). Années antérieures : extrapolation synthétique à partir de XIC/TSX, S&amp;P 500, MSCI EAFE, MSCI EM et Obl. US 10 ans. L'effet de change CAD/USD n'est pas inclus dans l'extrapolation.
+          Rendements annuels totaux (dividendes inclus). S&amp;P 500 : 1928–2024. TSX : 1956–2024. Sources : Damodaran (NYU), Bloomberg.<br>
+          <strong style="color:var(--text);">XEQT / XGRO / XBAL</strong> — Rendements annuels totaux. Sources : Yahoo Finance / iShares pour les vraies valeurs (XGRO &amp; XBAL depuis 2019, XEQT depuis 2020). Années antérieures (1990–) : synthétique basé sur TSX, S&amp;P 500, MSCI EAFE, MSCI EM et FTSE Canada Universe Bond Index.
         </p>
       </div>
     </div>
@@ -1924,6 +1929,37 @@
 
 <!-- ===================== SCRIPTS ===================== -->
 <script>
+
+// Gaussian (normal distribution) indices — mean and stddev in %
+const GAUSSIAN_PARAMS = {
+  vanguard5:   { mean: 14.14/100, std: 11.21/100, label: 'Vanguard All-Equity (5 ans)' },
+  vanguard10:  { mean: 13.29/100, std: 11.71/100, label: 'Vanguard All-Equity (10 ans)' },
+  vanguard30:  { mean:  8.98/100, std: 11.30/100, label: 'Vanguard All-Equity (30 ans)' },
+  dalio5:      { mean:  5.86/100, std:  8.36/100, label: 'Ray Dalio All Weather (5 ans)' },
+  dalio10:     { mean:  6.18/100, std:  8.10/100, label: 'Ray Dalio All Weather (10 ans)' },
+  dalio30:     { mean:  7.29/100, std:  8.49/100, label: 'Ray Dalio All Weather (30 ans)' },
+  benfelix5:   { mean: 14.41/100, std: 11.54/100, label: 'Ben Felix Five Factor 100/0 (5 ans)' },
+  benfelix10:  { mean: 13.16/100, std: 12.53/100, label: 'Ben Felix Five Factor 100/0 (10 ans)' },
+  benfelix30:  { mean:  9.21/100, std: 12.70/100, label: 'Ben Felix Five Factor 100/0 (30 ans)' },
+  benfelix8020_5:  { mean: 11.71/100, std: 10.10/100, label: 'Ben Felix Five Factor 80/20 (5 ans)' },
+  benfelix8020_10: { mean: 10.94/100, std: 10.54/100, label: 'Ben Felix Five Factor 80/20 (10 ans)' },
+  benfelix8020_30: { mean:  8.38/100, std: 10.36/100, label: 'Ben Felix Five Factor 80/20 (30 ans)' },
+  benfelix6040_5:  { mean:  8.99/100, std:  8.74/100, label: 'Ben Felix Five Factor 60/40 (5 ans)' },
+  benfelix6040_10: { mean:  8.70/100, std:  8.69/100, label: 'Ben Felix Five Factor 60/40 (10 ans)' },
+  benfelix6040_30: { mean:  7.47/100, std:  8.17/100, label: 'Ben Felix Five Factor 60/40 (30 ans)' },
+};
+
+function isGaussianIndex(key) { return key in GAUSSIAN_PARAMS; }
+
+// Box-Muller transform — samples from N(mean, std)
+function sampleGaussian(mean, std) {
+  let u, v;
+  do { u = Math.random(); } while (u === 0);
+  do { v = Math.random(); } while (v === 0);
+  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  return mean + std * z;
+}
+
 // ===================== COLLAPSIBLE SECTIONS (Simulateur) =====================
 function toggleSimSection(titleEl) {
   titleEl.classList.toggle('collapsed');
@@ -2172,13 +2208,15 @@ const HIST_P6040 = HIST_SP500.map((r, i) => 0.6*r + 0.4*(HIST_BONDS[i] !== undef
 const HIST_P8020 = HIST_SP500.map((r, i) => 0.8*r + 0.2*(HIST_BONDS[i] !== undefined ? HIST_BONDS[i] : 0.03));
 // XEQT synthétique 1988–2024. Vraies valeurs 2020–2024 (Yahoo Finance). Avant : extrapolation composantes.
 const HIST_XEQT = [19.31,25.19,-11.80,22.42,0.48,25.18,2.08,22.36,19.16,17.96,15.38,27.23,-7.10,-13.95,-17.04,32.04,14.97,13.78,19.69,9.94,-38.32,32.82,14.06,-5.49,14.05,22.81,7.28,-2.64,11.55,20.00,-8.50,26.01,11.85,19.69,-11.01,17.28,24.39].map(v => v/100);
-// XGRO synthétique 1988–2024 — 80% actions / 20% obligations. Vraies valeurs XGRO.TO 2008–2024 (Yahoo Finance).
-const HIST_XGRO = [17.10,23.69,-8.19,21.56,1.99,22.98,0.11,22.58,15.61,16.36,15.29,20.14,-2.35,-10.04,-10.61,25.71,12.87,11.60,16.14,10.00,-36.52,29.22,8.60,-4.93,10.20,14.45,8.62,2.94,7.45,11.66,-6.45,18.05,11.58,15.26,-11.06,15.07,20.18].map(v => v/100);
-// XBAL synthétique 1988–2024 — 60% actions / 40% obligations. Vraies valeurs XBAL.TO 2008–2024 (Yahoo Finance).
-const HIST_XBAL = [14.88,22.19,-4.58,20.70,3.51,20.79,-1.86,22.81,12.07,14.75,15.20,13.04,2.41,-6.14,-4.18,19.38,10.78,9.41,12.60,10.05,-17.71,25.68,8.24,3.71,8.01,5.91,9.03,-1.36,9.16,5.54,-2.73,15.34,10.73,11.04,-11.17,13.05,15.81].map(v => v/100);
-// XCNS synthétique 1988–2024 — 40% actions / 60% obligations. Vraies valeurs XCNS.TO 2020–2024 (Yahoo Finance).
-const HIST_XCNS = [12.66,20.69,-0.98,19.83,5.02,18.60,-3.83,23.03,8.52,13.15,15.10,5.94,7.16,-2.24,2.26,13.04,8.68,7.23,9.05,10.10,-3.27,6.46,10.70,7.43,7.40,3.67,9.36,-0.29,5.04,9.68,-3.41,16.19,10.28,6.57,-11.26,10.67,11.73].map(v => v/100);
-const HIST_DATA = { sp500: HIST_SP500, tsx: HIST_TSX, p6040: HIST_P6040, p8020: HIST_P8020, xeqt: HIST_XEQT, xgro: HIST_XGRO, xbal: HIST_XBAL, xcns: HIST_XCNS };
+// ── Séries CAD converties (source : xeqt_xgro_xbal_corrige_1990_2024.html) ──
+// XEQT CAD 1990–2024. Vraies valeurs iShares 2020–2024. Avant : synthétique TSX/SP500/EAFE/EM converti en CAD.
+const HIST_XEQT_CAD = [-12.21,21.43,7.5,27.47,6.27,20.02,18.92,22.18,22.31,21.65,-4.97,-10.3,-18.15,13.31,8.55,10.34,19.03,-3.37,-28.08,17.26,10.06,-4.83,11.7,29.25,14.06,11.46,8.29,13.51,-2.9,20.97,11.85,19.69,-11.01,17.28,24.39].map(v=>v/100);
+// XGRO CAD 1990–2024. Vraies valeurs iShares 2019–2024. Avant : synthétique 80/20 actions/obl. converti en CAD.
+const HIST_XGRO_CAD = [-8.17,21.3,8.58,25.43,4.45,19.94,17.27,20.7,19.97,16.88,-1.7,-6.34,-12.76,11.13,7.87,9.27,16.05,-2.48,-20.22,14.29,9.22,-1.95,10.02,23.4,13.28,10.53,6.88,11.08,-1.75,18.05,11.58,15.26,-11.06,15.07,20.18].map(v=>v/100);
+// XBAL CAD 1990–2024. Vraies valeurs iShares 2019–2024. Avant : synthétique 60/40 actions/obl. converti en CAD.
+const HIST_XBAL_CAD = [-4.13,21.17,9.65,23.4,2.63,19.86,15.61,19.21,17.63,12.11,1.58,-2.38,-7.36,8.94,7.19,8.21,13.07,-1.59,-12.36,11.33,8.38,0.92,8.33,17.55,12.49,9.6,5.47,8.65,-0.6,15.34,10.73,11.04,-11.17,13.05,15.81].map(v=>v/100);
+const HIST_DATA = { sp500: HIST_SP500, tsx: HIST_TSX, p6040: HIST_P6040, p8020: HIST_P8020, xeqt: HIST_XEQT, xeqt_cad: HIST_XEQT_CAD, xgro_cad: HIST_XGRO_CAD, xbal_cad: HIST_XBAL_CAD };
+
 
 function getHistReturns() { return HIST_DATA[document.getElementById('histIndex').value]; }
 
@@ -2306,6 +2344,17 @@ function getWithdrawalForYear(y, W0, inflAdj, inflRate) {
 
 let simMode = 'historique';
 
+function onHistIndexChange() {
+  const el = document.getElementById('histIndex');
+  if (!el) return;
+  const key = el.value;
+  const gauss = typeof isGaussianIndex === 'function' && isGaussianIndex(key);
+  const methodLabel = document.getElementById('histMethodLabel');
+  if (methodLabel) methodLabel.style.display = gauss ? 'none' : '';
+  const numSimsField = document.getElementById('numSimsField');
+  if (numSimsField) numSimsField.style.display = simMode === 'fixe' ? 'none' : 'block';
+}
+
 function setSimMode(mode) {
   simMode = mode;
   document.getElementById('btn-historique').classList.toggle('active', mode === 'historique');
@@ -2324,21 +2373,24 @@ function simulate() {
   const N = parseInt(document.getElementById('numSims').value);
   const isFixed = simMode === 'fixe';
   const fixedRate = isFixed ? parseFloat(document.getElementById('fixedRate').value) / 100 : null;
-  const histReturns = isFixed ? null : getHistReturns();
-  const histMethod = isFixed ? null : document.getElementById('histMethod').value;
+  const histKey = isFixed ? null : document.getElementById('histIndex').value;
+  const isGauss = !isFixed && isGaussianIndex(histKey);
+  const gaussParams = isGauss ? GAUSSIAN_PARAMS[histKey] : null;
+  const histReturns = (isFixed || isGauss) ? null : getHistReturns();
+  const histMethod = (isFixed || isGauss) ? null : document.getElementById('histMethod').value;
   const usePaliers = getPaliersEnabled();
   const startAgeSimu = parseInt(document.getElementById('startAgeSimu').value) || 55;
 
-  const histStartYear = isFixed ? null : (() => {
-    const key = document.getElementById('histIndex').value;
-    const starts = { sp500:1928, tsx:1956, p6040:1928, p8020:1928, xeqt:1988, xgro:1988, xbal:1988, xcns:1988 };
-    return starts[key] || 1928;
-  })();
+  const histStartYear = (!isFixed && !isGauss) ? (() => {
+    const starts = { sp500:1928, tsx:1956, p6040:1928, p8020:1928, xeqt:1988, xeqt_cad:1990, xgro_cad:1990, xbal_cad:1990 };
+    return starts[histKey] || 1928;
+  })() : null;
 
   if (P0 <= 0 || years < 1) { alert('Veuillez entrer des valeurs valides.'); return; }
 
   function nextReturn(blockState) {
     if (isFixed) return { r: 1 + fixedRate, histIdx: null };
+    if (isGauss) return { r: 1 + sampleGaussian(gaussParams.mean, gaussParams.std), histIdx: null };
     const { r, histIdx } = sampleHistReturn(histReturns, histMethod, blockState);
     return { r: 1 + r, histIdx };
   }
@@ -2409,8 +2461,12 @@ function simulate() {
   const scenarioDetails = scenarioEntries.map(e => e.detail);
 
   const idxEl = document.getElementById('histIndex');
-  const methodLabel = histMethod==='bootstrap' ? 'Bootstrap' : histMethod==='block7' ? 'Séquences 7 ans' : histMethod==='block10' ? 'Séquences 10 ans' : 'Séquences 5 ans';
-  const modeLabel = isFixed ? `Taux fixe · ${(fixedRate*100).toFixed(1)} %` : `Historique · ${idxEl.options[idxEl.selectedIndex].text.split(' ')[0]} · ${methodLabel}`;
+  const methodLabel = (!isFixed && !isGauss) ? (histMethod==='bootstrap' ? 'Bootstrap' : histMethod==='block7' ? 'Séquences 7 ans' : histMethod==='block10' ? 'Séquences 10 ans' : 'Séquences 5 ans') : '';
+  const modeLabel = isFixed
+    ? `Taux fixe · ${(fixedRate*100).toFixed(1)} %`
+    : isGauss
+      ? `Monte Carlo · ${gaussParams.label} · μ=${(gaussParams.mean*100).toFixed(2)}% σ=${(gaussParams.std*100).toFixed(2)}%`
+      : `Historique · ${idxEl.options[idxEl.selectedIndex].text.split(' ')[0]} · ${methodLabel}`;
 
   renderResults({ labels, bands, sampledPaths, scenarioPaths, scenarioDetails, finalValues, survivePct, finalMedian, finalP10, finalP90, finalMean, N, years, P0, W0, inflAdj, inflRate, modeLabel, isFixed, startAgeSimu, usePaliers, paliersSnapshot: usePaliers ? JSON.parse(JSON.stringify(paliers)) : null });
 }
@@ -3141,17 +3197,14 @@ retRender();
 (function buildHistTable() {
   const SP500_START = 1928;
   const TSX_START   = 1956;
+  const CAD_START   = 1990;
   const END_YEAR    = 2024;
 
-  // Re-read from the already-defined arrays
   const sp   = HIST_SP500;
   const tsx  = HIST_TSX;
-  const bond = HIST_BONDS;
-  const xeqt = HIST_XEQT;
-  const xgro = HIST_XGRO;
-  const xbal = HIST_XBAL;
-  const xcns = HIST_XCNS;
-  const XEQT_START = 1988;
+  const xeqt = HIST_XEQT_CAD;
+  const xgro = HIST_XGRO_CAD;
+  const xbal = HIST_XBAL_CAD;
 
   const tbody = document.getElementById('histDataBody');
   if (!tbody) return;
@@ -3167,30 +3220,20 @@ retRender();
   for (let year = END_YEAR; year >= SP500_START; year--) {
     const spIdx   = year - SP500_START;
     const tsxIdx  = year - TSX_START;
-    const bondIdx = year - SP500_START;
-    const xeqtIdx = year - XEQT_START;
-
-    const spVal   = spIdx   >= 0 && spIdx   < sp.length   ? sp[spIdx]   : null;
-    const tsxVal  = tsxIdx  >= 0 && tsxIdx  < tsx.length  ? tsx[tsxIdx] : null;
-    const bondVal = bondIdx >= 0 && bondIdx < bond.length ? bond[bondIdx] : null;
-    const xeqtVal = xeqtIdx >= 0 && xeqtIdx < xeqt.length ? xeqt[xeqtIdx] : null;
-    const xgroVal = xeqtIdx >= 0 && xeqtIdx < xgro.length ? xgro[xeqtIdx] : null;
-    const xbalVal = xeqtIdx >= 0 && xeqtIdx < xbal.length ? xbal[xeqtIdx] : null;
-    const xcnsVal = xeqtIdx >= 0 && xeqtIdx < xcns.length ? xcns[xeqtIdx] : null;
-    const p6040   = spVal !== null && bondVal !== null ? 0.6*spVal + 0.4*bondVal : null;
-    const p8020   = spVal !== null && bondVal !== null ? 0.8*spVal + 0.2*bondVal : null;
+    const cadIdx  = year - CAD_START;
+    const spVal   = spIdx  >= 0 && spIdx  < sp.length   ? sp[spIdx]   : null;
+    const tsxVal  = tsxIdx >= 0 && tsxIdx < tsx.length  ? tsx[tsxIdx] : null;
+    const xeqtVal = cadIdx >= 0 && cadIdx < xeqt.length ? xeqt[cadIdx] : null;
+    const xgroVal = cadIdx >= 0 && cadIdx < xgro.length ? xgro[cadIdx] : null;
+    const xbalVal = cadIdx >= 0 && cadIdx < xbal.length ? xbal[cadIdx] : null;
 
     rows += `<tr>
       <td style="font-weight:600;">${year}</td>
       <td>${fmtR(spVal)}</td>
       <td>${fmtR(tsxVal)}</td>
-      <td>${fmtR(bondVal)}</td>
-      <td>${fmtR(p6040)}</td>
-      <td>${fmtR(p8020)}</td>
       <td>${fmtR(xeqtVal)}</td>
       <td>${fmtR(xgroVal)}</td>
       <td>${fmtR(xbalVal)}</td>
-      <td>${fmtR(xcnsVal)}</td>
     </tr>`;
   }
   tbody.innerHTML = rows;
